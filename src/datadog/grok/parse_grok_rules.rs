@@ -1,7 +1,8 @@
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     convert::TryFrom,
 };
+use indexmap::IndexMap;
 
 use crate::path::OwnedValuePath;
 use crate::value::{KeyString, Value};
@@ -45,7 +46,7 @@ pub struct GrokRuleParseContext {
     /// a map of capture names(grok0, grok1, ...) to field information.
     pub fields: HashMap<String, GrokField>,
     /// aliases and their definitions
-    pub aliases: BTreeMap<KeyString, String>,
+    pub aliases: IndexMap<KeyString, String>,
     /// used to detect cycles in alias definitions
     pub alias_stack: Vec<String>,
 }
@@ -68,7 +69,7 @@ impl GrokRuleParseContext {
             .and_modify(|v| v.filters.insert(0, filter));
     }
 
-    fn new(aliases: BTreeMap<KeyString, String>) -> Self {
+    fn new(aliases: IndexMap<KeyString, String>) -> Self {
         Self {
             regex: String::new(),
             fields: HashMap::new(),
@@ -115,7 +116,7 @@ pub enum Error {
 /// For further documentation and the full list of available matcher and filters check out <https://docs.datadoghq.com/logs/processing/parsing>
 pub fn parse_grok_rules(
     patterns: &[String],
-    aliases: BTreeMap<KeyString, String>,
+    aliases: IndexMap<KeyString, String>,
 ) -> Result<Vec<GrokRule>, Error> {
     let mut grok = Grok::with_patterns();
 
@@ -437,7 +438,7 @@ mod tests {
     fn supports_escaped_quotes() {
         let rules = parse_grok_rules(
             &[r#"%{notSpace:field:nullIf("with \"escaped\" quotes")}"#.to_string()],
-            BTreeMap::new(),
+            IndexMap::new(),
         )
         .expect("couldn't parse rules");
         assert!(matches!(

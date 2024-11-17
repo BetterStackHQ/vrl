@@ -10,7 +10,8 @@ use nom::{
     sequence::{delimited, pair, preceded},
     IResult,
 };
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
+use indexmap::IndexMap;
 
 fn build_map() -> HashMap<&'static str, (usize, CustomField)> {
     [
@@ -324,7 +325,7 @@ fn parse_key(input: &str) -> IResult<&str, &str, VerboseError<&str>> {
 
 fn type_def() -> TypeDef {
     TypeDef::object(Collection::from_parts(
-        BTreeMap::from([
+        IndexMap::from([
             (Field::from("cefVersion"), Kind::bytes()),
             (Field::from("deviceVendor"), Kind::bytes()),
             (Field::from("deviceProduct"), Kind::bytes()),

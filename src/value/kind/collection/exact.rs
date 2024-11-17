@@ -1,4 +1,5 @@
-use std::{collections::BTreeMap, ops::BitOr};
+use std::ops::BitOr;
+use indexmap::IndexMap;
 
 use crate::value::Kind;
 
@@ -129,11 +130,11 @@ impl From<Exact> for Kind {
         }
 
         if exact.object {
-            kind.add_object(BTreeMap::default());
+            kind.add_object(IndexMap::default());
         }
 
         if exact.array {
-            kind.add_array(BTreeMap::default());
+            kind.add_array(IndexMap::default());
         }
 
         kind
@@ -164,7 +165,7 @@ impl From<&Kind> for Exact {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use indexmap::IndexMap;
 
     use super::*;
 

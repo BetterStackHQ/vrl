@@ -96,7 +96,8 @@ impl BitOr for Kind {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::HashMap;
+    use indexmap::IndexMap;
 
     #[test]
     #[allow(clippy::too_many_lines)]
@@ -121,13 +122,13 @@ mod tests {
                 "object field with unknown",
                 TestCase {
                     this: Kind::object(Collection::any()),
-                    other: Kind::object(BTreeMap::from([("x".into(), Kind::integer())])),
+                    other: Kind::object(IndexMap::from([("x".into(), Kind::integer())])),
                     strategy: Strategy {
                         collisions: CollisionStrategy::Union,
                     },
                     merged: {
                         let mut collection =
-                            Collection::from(BTreeMap::from([("x".into(), Kind::any())]));
+                            Collection::from(IndexMap::from([("x".into(), Kind::any())]));
                         collection.set_unknown(Kind::any());
                         Kind::object(collection)
                     },
@@ -182,10 +183,10 @@ mod tests {
             (
                 "mixed known shallow",
                 TestCase {
-                    this: Kind::bytes().or_object(BTreeMap::from([
+                    this: Kind::bytes().or_object(IndexMap::from([
                         (
                             "foo".into(),
-                            Kind::object(BTreeMap::from([
+                            Kind::object(IndexMap::from([
                                 ("qux".into(), Kind::bytes()),
                                 ("quux".into(), Kind::boolean()),
                                 ("this".into(), Kind::timestamp()),
@@ -193,10 +194,10 @@ mod tests {
                         ),
                         ("bar".into(), Kind::integer()),
                     ])),
-                    other: Kind::integer().or_object(BTreeMap::from([
+                    other: Kind::integer().or_object(IndexMap::from([
                         (
                             "foo".into(),
-                            Kind::object(BTreeMap::from([
+                            Kind::object(IndexMap::from([
                                 ("qux".into(), Kind::integer()),
                                 ("quux".into(), Kind::regex()),
                                 ("that".into(), Kind::null()),
@@ -207,10 +208,10 @@ mod tests {
                     strategy: Strategy {
                         collisions: CollisionStrategy::Overwrite,
                     },
-                    merged: Kind::bytes().or_integer().or_object(BTreeMap::from([
+                    merged: Kind::bytes().or_integer().or_object(IndexMap::from([
                         (
                             "foo".into(),
-                            Kind::object(BTreeMap::from([
+                            Kind::object(IndexMap::from([
                                 ("qux".into(), Kind::integer()),
                                 ("quux".into(), Kind::regex()),
                                 ("that".into(), Kind::null()),
@@ -224,10 +225,10 @@ mod tests {
             (
                 "mixed known deep",
                 TestCase {
-                    this: Kind::bytes().or_object(BTreeMap::from([
+                    this: Kind::bytes().or_object(IndexMap::from([
                         (
                             "foo".into(),
-                            Kind::object(BTreeMap::from([
+                            Kind::object(IndexMap::from([
                                 ("qux".into(), Kind::bytes()),
                                 ("quux".into(), Kind::boolean()),
                                 ("this".into(), Kind::timestamp()),
@@ -235,10 +236,10 @@ mod tests {
                         ),
                         ("bar".into(), Kind::integer()),
                     ])),
-                    other: Kind::integer().or_object(BTreeMap::from([
+                    other: Kind::integer().or_object(IndexMap::from([
                         (
                             "foo".into(),
-                            Kind::object(BTreeMap::from([
+                            Kind::object(IndexMap::from([
                                 ("qux".into(), Kind::integer()),
                                 ("quux".into(), Kind::regex()),
                                 ("that".into(), Kind::null()),
@@ -249,10 +250,10 @@ mod tests {
                     strategy: Strategy {
                         collisions: CollisionStrategy::Union,
                     },
-                    merged: Kind::bytes().or_integer().or_object(BTreeMap::from([
+                    merged: Kind::bytes().or_integer().or_object(IndexMap::from([
                         (
                             "foo".into(),
-                            Kind::object(BTreeMap::from([
+                            Kind::object(IndexMap::from([
                                 ("qux".into(), Kind::bytes().or_integer()),
                                 ("quux".into(), Kind::boolean().or_regex()),
                                 ("this".into(), Kind::timestamp().or_undefined()),

@@ -11,12 +11,13 @@ use crate::compiler::prelude::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 mod non_wasm {
-    use std::collections::BTreeMap;
     use std::io::Error;
     use std::net::ToSocketAddrs;
     use std::sync::{mpsc, Arc, Mutex};
     use std::thread;
     use std::time::Duration;
+
+    use indexmap::IndexMap;
 
     use domain::base::iana::Class;
     use domain::base::{Name, RecordSection, Rtype};
@@ -337,8 +338,8 @@ mod non_wasm {
         }
     }
 
-    fn header_kind() -> BTreeMap<Field, Kind> {
-        BTreeMap::from([
+    fn header_kind() -> IndexMap<Field, Kind> {
+        IndexMap::from([
             (Field::from("aa"), Kind::boolean()),
             (Field::from("ad"), Kind::boolean()),
             (Field::from("anCount"), Kind::integer()),
@@ -355,8 +356,8 @@ mod non_wasm {
         ])
     }
 
-    fn rdata_kind() -> BTreeMap<Field, Kind> {
-        BTreeMap::from([
+    fn rdata_kind() -> IndexMap<Field, Kind> {
+        IndexMap::from([
             (Field::from("class"), Kind::bytes()),
             (Field::from("domainName"), Kind::bytes()),
             (Field::from("rData"), Kind::bytes()),
@@ -366,8 +367,8 @@ mod non_wasm {
         ])
     }
 
-    fn question_kind() -> BTreeMap<Field, Kind> {
-        BTreeMap::from([
+    fn question_kind() -> IndexMap<Field, Kind> {
+        IndexMap::from([
             (Field::from("class"), Kind::bytes()),
             (Field::from("domainName"), Kind::bytes()),
             (Field::from("questionType"), Kind::bytes()),
@@ -375,8 +376,8 @@ mod non_wasm {
         ])
     }
 
-    pub(super) fn inner_kind() -> BTreeMap<Field, Kind> {
-        BTreeMap::from([
+    pub(super) fn inner_kind() -> IndexMap<Field, Kind> {
+        IndexMap::from([
             (Field::from("fullRcode"), Kind::integer()),
             (Field::from("rcodeName"), Kind::bytes() | Kind::null()),
             (Field::from("time"), Kind::bytes() | Kind::null()),
@@ -763,7 +764,7 @@ impl Function for DnsLookup {
 #[cfg(test)]
 #[cfg(not(target_arch = "wasm32"))]
 mod tests {
-    use std::collections::{BTreeMap, HashSet};
+    use std::collections::{IndexMap, HashSet};
 
     use super::*;
     use crate::value;
@@ -906,7 +907,7 @@ mod tests {
 
     fn prepare_dns_lookup(dns_lookup_fn: DnsLookupFn) -> Resolved {
         let tz = TimeZone::default();
-        let mut object: Value = Value::Object(BTreeMap::new());
+        let mut object: Value = Value::Object(IndexMap::new());
         let mut runtime_state = state::RuntimeState::default();
         let mut ctx = Context::new(&mut object, &mut runtime_state, &tz);
         dns_lookup_fn.resolve(&mut ctx)

@@ -1,7 +1,7 @@
 use super::log_util;
 use crate::compiler::prelude::*;
 use crate::value;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 fn parse_apache_log(
     bytes: Value,
@@ -142,8 +142,8 @@ impl FunctionExpression for ParseApacheLogFn {
     }
 }
 
-fn kind_common() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn kind_common() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         (Field::from("host"), Kind::bytes() | Kind::null()),
         (Field::from("identity"), Kind::bytes() | Kind::null()),
         (Field::from("user"), Kind::bytes() | Kind::null()),
@@ -157,8 +157,8 @@ fn kind_common() -> BTreeMap<Field, Kind> {
     ])
 }
 
-fn kind_combined() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn kind_combined() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         (Field::from("host"), Kind::bytes() | Kind::null()),
         (Field::from("identity"), Kind::bytes() | Kind::null()),
         (Field::from("user"), Kind::bytes() | Kind::null()),
@@ -174,8 +174,8 @@ fn kind_combined() -> BTreeMap<Field, Kind> {
     ])
 }
 
-fn kind_error() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn kind_error() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         (Field::from("timestamp"), Kind::timestamp() | Kind::null()),
         (Field::from("module"), Kind::bytes() | Kind::null()),
         (Field::from("severity"), Kind::bytes() | Kind::null()),
@@ -337,7 +337,7 @@ mod tests {
             args: func_args![value: "- - - - - - -",
                              format: "common",
             ],
-            want: Ok(BTreeMap::new()),
+            want: Ok(IndexMap::new()),
             tdef: TypeDef::object(kind_common()).fallible(),
             tz: TimeZone::default(),
         }
@@ -346,7 +346,7 @@ mod tests {
             args: func_args![value: r#"- - - [-] "-" - -"#,
                              format: "common",
             ],
-            want: Ok(BTreeMap::new()),
+            want: Ok(IndexMap::new()),
             tdef: TypeDef::object(kind_common()).fallible(),
             tz: TimeZone::default(),
         }

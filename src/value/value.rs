@@ -3,7 +3,9 @@
 use bytes::{Bytes, BytesMut};
 use chrono::{DateTime, SecondsFormat, Utc};
 use ordered_float::NotNan;
-use std::{cmp::Ordering, collections::BTreeMap};
+use std::{cmp::Ordering};
+use std::hash::{Hash, Hasher};
+use indexmap::IndexMap;
 
 pub use iter::{IterItem, ValueIter};
 
@@ -28,10 +30,10 @@ mod serde;
 pub type StdError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 /// The storage mapping for the `Object` variant.
-pub type ObjectMap = BTreeMap<KeyString, Value>;
+pub type ObjectMap = IndexMap<KeyString, Value>;
 
 /// The main value type used in Vector events, and VRL.
-#[derive(Eq, PartialEq, Hash, Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub enum Value {
     /// Bytes - usually representing a UTF8 String.
     Bytes(Bytes),
@@ -97,7 +99,7 @@ impl Value {
     ///
     /// ```rust
     /// use vrl::value::Value;
-    /// use std::collections::BTreeMap;
+    /// use indexmap::IndexMap;
     /// use vrl::path;
     ///
     /// let val = Value::from(1);
@@ -110,7 +112,7 @@ impl Value {
     /// val.insert(path!(3), 1);
     /// assert_eq!(val.is_empty(), false);
     ///
-    /// let mut val = Value::from(BTreeMap::default());
+    /// let mut val = Value::from(IndexMap::default());
     /// assert_eq!(val.is_empty(), true);
     /// val.insert(path!("foo"), 1);
     /// assert_eq!(val.is_empty(), false);
@@ -172,6 +174,30 @@ impl Value {
     }
 }
 
+impl Hash for Value {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Value::Bytes(v) => v.hash(state),
+            Value::Integer(v) => v.hash(state),
+            Value::Float(v) => v.to_bits().hash(state),
+            Value::Boolean(v) => v.hash(state),
+            Value::Object(v) => {
+                // Sort keys for consistent hashing
+                let mut entries: Vec<_> = v.iter().collect();
+                entries.sort_by(|a, b| a.0.cmp(b.0));
+                for (k, v) in entries {
+                    k.hash(state);
+                    v.hash(state);
+                }
+            },
+            Value::Array(v) => v.hash(state),
+            Value::Timestamp(v) => v.timestamp_nanos().hash(state),
+            Value::Null => 0.hash(state),
+            Value::Regex(v) => v.as_str().hash(state),  // Hash the regex pattern string
+        }
+    }
+}
+
 impl PartialOrd for Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if std::mem::discriminant(self) != std::mem::discriminant(other) {
@@ -184,7 +210,14 @@ impl PartialOrd for Value {
             (Self::Float(a), Self::Float(b)) => a.partial_cmp(b),
             (Self::Boolean(a), Self::Boolean(b)) => a.partial_cmp(b),
             (Self::Timestamp(a), Self::Timestamp(b)) => a.partial_cmp(b),
-            (Self::Object(a), Self::Object(b)) => a.partial_cmp(b),
+            (Self::Object(a), Self::Object(b)) => {
+                // Convert to vectors and sort for consistent comparison
+                let mut a_vec: Vec<_> = a.iter().collect();
+                let mut b_vec: Vec<_> = b.iter().collect();
+                a_vec.sort_by(|a, b| a.0.cmp(b.0));
+                b_vec.sort_by(|a, b| a.0.cmp(b.0));
+                a_vec.partial_cmp(&b_vec)
+            }
             (Self::Array(a), Self::Array(b)) => a.partial_cmp(b),
             _ => None,
         }
@@ -211,7 +244,7 @@ mod test {
 
         #[test]
         fn remove_prune_map_with_map() {
-            let mut value = Value::from(BTreeMap::default());
+            let mut value = Value::from(IndexMap::default());
             let key = "foo.bar";
             let marker = Value::from(true);
             assert_eq!(value.insert(key, marker.clone()), None);
@@ -222,7 +255,7 @@ mod test {
 
         #[test]
         fn remove_prune_map_with_array() {
-            let mut value = Value::from(BTreeMap::default());
+            let mut value = Value::from(IndexMap::default());
             let key = "foo[0]";
             let marker = Value::from(true);
             assert_eq!(value.insert(key, marker.clone()), None);
@@ -257,7 +290,7 @@ mod test {
     #[test]
     fn quickcheck_value() {
         fn inner(mut path: Vec<BorrowedSegment<'static>>) -> TestResult {
-            let mut value = Value::from(BTreeMap::default());
+            let mut value = Value::from(IndexMap::default());
             let mut marker = Value::from(true);
 
             // Push a field at the start of the path so the top level is a map.

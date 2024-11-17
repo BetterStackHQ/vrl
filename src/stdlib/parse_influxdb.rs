@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 use chrono::DateTime;
 use influxdb_line_protocol::{FieldValue, ParsedLine};
@@ -249,7 +249,7 @@ fn gauge_kind() -> Kind {
     })
 }
 
-fn metric_kind() -> BTreeMap<Field, Kind> {
+fn metric_kind() -> IndexMap<Field, Kind> {
     btreemap! {
         "name" => Kind::bytes(),
         "tags" => tags_kind(),

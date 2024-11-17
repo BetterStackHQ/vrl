@@ -1,5 +1,5 @@
 use crate::compiler::prelude::*;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 fn filter<T>(value: Value, ctx: &mut Context, runner: closure::Runner<T>) -> Resolved
 where
@@ -17,7 +17,7 @@ where
                     Err(err) => Some(Err(err)),
                 },
             )
-            .collect::<ExpressionResult<BTreeMap<_, _>>>()
+            .collect::<ExpressionResult<IndexMap<_, _>>>()
             .map(Into::into),
 
         Value::Array(array) => array

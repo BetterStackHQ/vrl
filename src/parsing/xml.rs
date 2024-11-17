@@ -5,8 +5,9 @@ use roxmltree::{Document, Node, NodeType};
 use rust_decimal::prelude::Zero;
 use std::{
     borrow::Cow,
-    collections::{btree_map::Entry, BTreeMap},
 };
+use indexmap::IndexMap;
+use indexmap::map::Entry;
 
 /// Used to keep Clippy's `too_many_argument` check happy.
 #[derive(Debug, Default)]
@@ -99,7 +100,7 @@ pub(crate) fn parse_xml(value: Value, options: ParseOptions) -> Resolved {
 fn process_node(node: Node, config: &ParseXmlConfig) -> Value {
     // Helper to recurse over a `Node`s children, and build an object.
     let recurse = |node: Node| -> ObjectMap {
-        let mut map = BTreeMap::new();
+        let mut map = IndexMap::new();
 
         // Expand attributes, if required.
         if config.include_attr {
@@ -167,7 +168,7 @@ fn process_node(node: Node, config: &ParseXmlConfig) -> Value {
 
                         // If the node is an element, treat it as an object.
                         if node.is_element() {
-                            let mut map = BTreeMap::new();
+                            let mut map = IndexMap::new();
 
                             map.insert(
                                 node.tag_name().name().to_string().into(),

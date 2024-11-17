@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate afl;
 
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 use vrl::compiler::state::RuntimeState;
 use vrl::compiler::CompileConfig;
@@ -37,7 +37,7 @@ fn fuzz(src: &str) {
     if let Ok(result) = vrl::compiler::compile_with_external(src, &fns, &external, config) {
         let mut target = TargetValue {
             value: value!({}),
-            metadata: Value::Object(BTreeMap::new()),
+            metadata: Value::Object(IndexMap::new()),
             secrets: Secrets::default(),
         };
 

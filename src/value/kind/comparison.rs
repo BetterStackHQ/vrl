@@ -423,7 +423,8 @@ impl Kind {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::HashMap;
+    use indexmap::IndexMap;
 
     use super::*;
     use crate::value::kind::Collection;
@@ -458,7 +459,7 @@ mod tests {
                 "any-like",
                 TestCase {
                     this: Kind::any().or_object(Collection::from_parts(
-                        BTreeMap::from([("foo".into(), Kind::any())]),
+                        IndexMap::from([("foo".into(), Kind::any())]),
                         Kind::any(),
                     )),
                     other: Kind::any(),
@@ -471,7 +472,7 @@ mod tests {
                     // The object we create here has no "unknown" fields, e.g. it's a "closed"
                     // object. The `other` object _does_ have unknown field types, and thus `this`
                     // cannot be a superset of `other`.
-                    this: Kind::any().or_object(BTreeMap::from([("foo".into(), Kind::any())])),
+                    this: Kind::any().or_object(IndexMap::from([("foo".into(), Kind::any())])),
                     other: Kind::any(),
                     want: false,
                 },
@@ -479,13 +480,13 @@ mod tests {
             (
                 "nested object match",
                 TestCase {
-                    this: Kind::object(BTreeMap::from([(
+                    this: Kind::object(IndexMap::from([(
                         "foo".into(),
-                        Kind::object(BTreeMap::from([("bar".into(), Kind::any())])),
+                        Kind::object(IndexMap::from([("bar".into(), Kind::any())])),
                     )])),
-                    other: Kind::object(BTreeMap::from([(
+                    other: Kind::object(IndexMap::from([(
                         "foo".into(),
-                        Kind::object(BTreeMap::from([("bar".into(), Kind::bytes())])),
+                        Kind::object(IndexMap::from([("bar".into(), Kind::bytes())])),
                     )])),
                     want: true,
                 },
@@ -493,13 +494,13 @@ mod tests {
             (
                 "nested object mismatch",
                 TestCase {
-                    this: Kind::object(BTreeMap::from([(
+                    this: Kind::object(IndexMap::from([(
                         "foo".into(),
-                        Kind::object(BTreeMap::from([("bar".into(), Kind::bytes())])),
+                        Kind::object(IndexMap::from([("bar".into(), Kind::bytes())])),
                     )])),
-                    other: Kind::object(BTreeMap::from([(
+                    other: Kind::object(IndexMap::from([(
                         "foo".into(),
-                        Kind::object(BTreeMap::from([("bar".into(), Kind::integer())])),
+                        Kind::object(IndexMap::from([("bar".into(), Kind::integer())])),
                     )])),
                     want: false,
                 },
@@ -507,13 +508,13 @@ mod tests {
             (
                 "nested array match",
                 TestCase {
-                    this: Kind::array(BTreeMap::from([(
+                    this: Kind::array(IndexMap::from([(
                         0.into(),
-                        Kind::array(BTreeMap::from([(1.into(), Kind::any())])),
+                        Kind::array(IndexMap::from([(1.into(), Kind::any())])),
                     )])),
-                    other: Kind::array(BTreeMap::from([(
+                    other: Kind::array(IndexMap::from([(
                         0.into(),
-                        Kind::array(BTreeMap::from([(1.into(), Kind::bytes())])),
+                        Kind::array(IndexMap::from([(1.into(), Kind::bytes())])),
                     )])),
                     want: true,
                 },
@@ -521,13 +522,13 @@ mod tests {
             (
                 "nested array mismatch",
                 TestCase {
-                    this: Kind::array(BTreeMap::from([(
+                    this: Kind::array(IndexMap::from([(
                         0.into(),
-                        Kind::array(BTreeMap::from([(1.into(), Kind::bytes())])),
+                        Kind::array(IndexMap::from([(1.into(), Kind::bytes())])),
                     )])),
-                    other: Kind::array(BTreeMap::from([(
+                    other: Kind::array(IndexMap::from([(
                         0.into(),
-                        Kind::array(BTreeMap::from([(1.into(), Kind::integer())])),
+                        Kind::array(IndexMap::from([(1.into(), Kind::integer())])),
                     )])),
                     want: false,
                 },
@@ -597,14 +598,14 @@ mod tests {
             (
                 "object",
                 TestCase {
-                    kind: Kind::object(BTreeMap::default()),
+                    kind: Kind::object(IndexMap::default()),
                     want: true,
                 },
             ),
             (
                 "array",
                 TestCase {
-                    kind: Kind::array(BTreeMap::default()),
+                    kind: Kind::array(IndexMap::default()),
                     want: true,
                 },
             ),
@@ -618,7 +619,7 @@ mod tests {
             (
                 "null & object",
                 TestCase {
-                    kind: Kind::null().or_object(BTreeMap::default()),
+                    kind: Kind::null().or_object(IndexMap::default()),
                     want: false,
                 },
             ),

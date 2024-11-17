@@ -1,11 +1,11 @@
 use std::{
-    collections::BTreeMap,
     fmt,
     hash::{Hash, Hasher},
     iter::IntoIterator,
     ops::Deref,
     str::FromStr,
 };
+use indexmap::IndexMap;
 
 use crate::diagnostic::Span;
 use crate::path::{OwnedTargetPath, OwnedValuePath, PathPrefix};
@@ -552,7 +552,7 @@ impl FromIterator<Node<Expr>> for Array {
 // -----------------------------------------------------------------------------
 
 #[derive(Clone, PartialEq)]
-pub struct Object(pub(crate) BTreeMap<Node<String>, Node<Expr>>);
+pub struct Object(pub(crate) IndexMap<Node<String>, Node<Expr>>);
 
 impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -582,7 +582,7 @@ impl fmt::Debug for Object {
 
 impl IntoIterator for Object {
     type Item = (Node<String>, Node<Expr>);
-    type IntoIter = std::collections::btree_map::IntoIter<Node<String>, Node<Expr>>;
+    type IntoIter = indexmap::map::IntoIter<Node<String>, Node<Expr>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()

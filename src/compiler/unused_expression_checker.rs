@@ -27,7 +27,8 @@ use crate::parser::ast::{
 };
 use crate::parser::template_string::StringSegment;
 use crate::parser::{Literal, Program, Span};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
+use indexmap::IndexMap;
 use tracing::warn;
 
 #[must_use]
@@ -51,7 +52,7 @@ struct VisitorState {
     level: usize,
     expecting_result: HashMap<usize, bool>,
     within_block_expression: HashMap<usize, bool>,
-    ident_to_state: BTreeMap<Ident, IdentState>,
+    ident_to_state: IndexMap<Ident, IdentState>,
     diagnostics: DiagnosticList,
 }
 

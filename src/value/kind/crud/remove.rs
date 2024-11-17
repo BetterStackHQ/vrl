@@ -5,6 +5,7 @@ use crate::path::OwnedValuePath;
 use crate::value::kind::collection::{CollectionRemove, EmptyState};
 use crate::value::kind::{Collection, Field};
 use crate::value::Kind;
+use crate::value::kind::collection::Index;
 
 impl Kind {
     /// Removes the `Kind` at the given `path` within `self`.
@@ -78,7 +79,7 @@ impl Kind {
                                     for i in min_index..=largest_known_index {
                                         let mut single_remove = original.clone();
                                         if let Some(child) =
-                                            single_remove.known_mut().get_mut(&i.into())
+                                            single_remove.known_mut().get_mut::<Index>(&i.into())
                                         {
                                             child.remove_inner(&segments[1..], compact).compact(
                                                 &mut single_remove,
@@ -105,7 +106,7 @@ impl Kind {
                         // The modified value is discarded here (It's not needed)
                         array
                             .known_mut()
-                            .get_mut(&(index as usize).into())
+                            .get_mut::<Index>(&(index as usize).into())
                             .unwrap_or(&mut at_path_kind)
                             .remove_inner(&segments[1..], compact)
                             .compact(array, index as usize, compact)
@@ -150,7 +151,7 @@ impl CompactOptions {
         continue_compact: bool,
     ) -> Self
     where
-        T: Ord + Clone + std::fmt::Debug,
+        T: Ord + Clone + std::fmt::Debug + std::hash::Hash,
         Collection<T>: CollectionRemove<Key = T>,
     {
         let key = &key.into();
@@ -205,7 +206,7 @@ impl From<EmptyState> for CompactOptions {
 mod test {
     use super::*;
     use crate::owned_value_path;
-    use std::collections::BTreeMap;
+    use indexmap::IndexMap;
 
     #[test]
     #[allow(clippy::too_many_lines)]
@@ -241,14 +242,14 @@ mod test {
             (
                 "remove array root",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([(
+                    kind: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::integer(),
                     )]))),
                     path: owned_value_path!(),
                     compact: false,
                     want: Kind::array(Collection::empty()),
-                    return_value: Kind::array(Collection::from(BTreeMap::from([(
+                    return_value: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::integer(),
                     )]))),
@@ -257,14 +258,14 @@ mod test {
             (
                 "remove object root",
                 TestCase {
-                    kind: Kind::object(Collection::from(BTreeMap::from([(
+                    kind: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::integer(),
                     )]))),
                     path: owned_value_path!(),
                     compact: false,
                     want: Kind::object(Collection::empty()),
-                    return_value: Kind::object(Collection::from(BTreeMap::from([(
+                    return_value: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::integer(),
                     )]))),
@@ -273,7 +274,7 @@ mod test {
             (
                 "remove object field",
                 TestCase {
-                    kind: Kind::object(Collection::from(BTreeMap::from([(
+                    kind: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::integer(),
                     )]))),
@@ -286,16 +287,16 @@ mod test {
             (
                 "remove nested object field",
                 TestCase {
-                    kind: Kind::object(Collection::from(BTreeMap::from([(
+                    kind: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
-                        Kind::object(Collection::from(BTreeMap::from([(
+                        Kind::object(Collection::from(IndexMap::from([(
                             "b".into(),
                             Kind::integer(),
                         )]))),
                     )]))),
                     path: owned_value_path!("a", "b"),
                     compact: false,
-                    want: Kind::object(Collection::from(BTreeMap::from([(
+                    want: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::object(Collection::empty()),
                     )]))),
@@ -305,9 +306,9 @@ mod test {
             (
                 "remove nested object field: compact",
                 TestCase {
-                    kind: Kind::object(Collection::from(BTreeMap::from([(
+                    kind: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
-                        Kind::object(Collection::from(BTreeMap::from([(
+                        Kind::object(Collection::from(IndexMap::from([(
                             "b".into(),
                             Kind::integer(),
                         )]))),
@@ -322,13 +323,13 @@ mod test {
                 "remove object unknown field",
                 TestCase {
                     kind: Kind::object(
-                        Collection::from(BTreeMap::from([("a".into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([("a".into(), Kind::integer())]))
                             .with_unknown(Kind::float()),
                     ),
                     path: owned_value_path!("b"),
                     compact: false,
                     want: Kind::object(
-                        Collection::from(BTreeMap::from([("a".into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([("a".into(), Kind::integer())]))
                             .with_unknown(Kind::float()),
                     ),
                     return_value: Kind::float().or_null(),
@@ -338,13 +339,13 @@ mod test {
                 "remove object unknown field: compact",
                 TestCase {
                     kind: Kind::object(
-                        Collection::from(BTreeMap::from([("a".into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([("a".into(), Kind::integer())]))
                             .with_unknown(Kind::float()),
                     ),
                     path: owned_value_path!("b"),
                     compact: true,
                     want: Kind::object(
-                        Collection::from(BTreeMap::from([("a".into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([("a".into(), Kind::integer())]))
                             .with_unknown(Kind::float()),
                     ),
                     return_value: Kind::float().or_null(),
@@ -353,13 +354,13 @@ mod test {
             (
                 "remove nested object field: maybe compact",
                 TestCase {
-                    kind: Kind::object(Collection::from(BTreeMap::from([(
+                    kind: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::object(Collection::empty().with_unknown(Kind::float())),
                     )]))),
                     path: owned_value_path!("a", "b"),
                     compact: true,
-                    want: Kind::object(Collection::from(BTreeMap::from([(
+                    want: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::object(Collection::empty().with_unknown(Kind::float()))
                             .or_undefined(),
@@ -380,13 +381,13 @@ mod test {
             (
                 "remove deep nested unknown object field",
                 TestCase {
-                    kind: Kind::object(Collection::from(BTreeMap::from([(
+                    kind: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::object(Collection::empty().with_unknown(Kind::any_object())),
                     )]))),
                     path: owned_value_path!("a", "b", "c"),
                     compact: false,
-                    want: Kind::object(Collection::from(BTreeMap::from([(
+                    want: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::object(Collection::empty().with_unknown(Kind::any_object())),
                     )]))),
@@ -396,13 +397,13 @@ mod test {
             (
                 "remove deep nested unknown object field: compact",
                 TestCase {
-                    kind: Kind::object(Collection::from(BTreeMap::from([(
+                    kind: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::object(Collection::empty().with_unknown(Kind::any_object())),
                     )]))),
                     path: owned_value_path!("a", "b", "c"),
                     compact: true,
-                    want: Kind::object(Collection::from(BTreeMap::from([(
+                    want: Kind::object(Collection::from(IndexMap::from([(
                         "a".into(),
                         Kind::object(Collection::empty().with_unknown(Kind::any_object()))
                             .or_undefined(),
@@ -433,7 +434,7 @@ mod test {
             (
                 "remove known index 0",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([(
+                    kind: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::integer(),
                     )]))),
@@ -446,13 +447,13 @@ mod test {
             (
                 "remove known index 0, shift elements",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([
+                    kind: Kind::array(Collection::from(IndexMap::from([
                         (0.into(), Kind::integer()),
                         (1.into(), Kind::float()),
                     ]))),
                     path: owned_value_path!(0),
                     compact: true,
-                    want: Kind::array(Collection::from(BTreeMap::from([(
+                    want: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::float(),
                     )]))),
@@ -462,14 +463,14 @@ mod test {
             (
                 "remove known index 1, shift elements",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([
+                    kind: Kind::array(Collection::from(IndexMap::from([
                         (0.into(), Kind::integer()),
                         (1.into(), Kind::float()),
                         (2.into(), Kind::bytes()),
                     ]))),
                     path: owned_value_path!(1),
                     compact: true,
-                    want: Kind::array(Collection::from(BTreeMap::from([
+                    want: Kind::array(Collection::from(IndexMap::from([
                         (0.into(), Kind::integer()),
                         (1.into(), Kind::bytes()),
                     ]))),
@@ -499,7 +500,7 @@ mod test {
             (
                 "remove index -1",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([(
+                    kind: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::integer(),
                     )]))),
@@ -512,13 +513,13 @@ mod test {
             (
                 "remove index -2",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([
+                    kind: Kind::array(Collection::from(IndexMap::from([
                         (0.into(), Kind::integer()),
                         (1.into(), Kind::float()),
                     ]))),
                     path: owned_value_path!(-2),
                     compact: false,
-                    want: Kind::array(Collection::from(BTreeMap::from([(
+                    want: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::float(),
                     )]))),
@@ -528,13 +529,13 @@ mod test {
             (
                 "remove negative index non-existing element",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([(
+                    kind: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::integer(),
                     )]))),
                     path: owned_value_path!(-2),
                     compact: false,
-                    want: Kind::array(Collection::from(BTreeMap::from([(
+                    want: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::integer(),
                     )]))),
@@ -565,13 +566,13 @@ mod test {
                 "remove negative index with unknown 2",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([(0.into(), Kind::float())]))
+                        Collection::from(IndexMap::from([(0.into(), Kind::float())]))
                             .with_unknown(Kind::integer()),
                     ),
                     path: owned_value_path!(-1),
                     compact: false,
                     want: Kind::array(
-                        Collection::from(BTreeMap::from([(
+                        Collection::from(IndexMap::from([(
                             0.into(),
                             Kind::float().or_integer().or_undefined(),
                         )]))
@@ -584,7 +585,7 @@ mod test {
                 "remove negative index with unknown 3",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::float()),
                             (1.into(), Kind::bytes()),
                         ]))
@@ -593,7 +594,7 @@ mod test {
                     path: owned_value_path!(-1),
                     compact: false,
                     want: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::float()),
                             (1.into(), Kind::bytes().or_integer().or_undefined()),
                         ]))
@@ -605,10 +606,10 @@ mod test {
             (
                 "remove nested index",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([
+                    kind: Kind::array(Collection::from(IndexMap::from([
                         (
                             0.into(),
-                            Kind::array(Collection::from(BTreeMap::from([
+                            Kind::array(Collection::from(IndexMap::from([
                                 (0.into(), Kind::float()),
                                 (1.into(), Kind::integer()),
                             ]))),
@@ -617,10 +618,10 @@ mod test {
                     ]))),
                     path: owned_value_path!(0, 0),
                     compact: false,
-                    want: Kind::array(Collection::from(BTreeMap::from([
+                    want: Kind::array(Collection::from(IndexMap::from([
                         (
                             0.into(),
-                            Kind::array(Collection::from(BTreeMap::from([(
+                            Kind::array(Collection::from(IndexMap::from([(
                                 0.into(),
                                 Kind::integer(),
                             )]))),
@@ -633,10 +634,10 @@ mod test {
             (
                 "remove nested index, compact",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([
+                    kind: Kind::array(Collection::from(IndexMap::from([
                         (
                             0.into(),
-                            Kind::array(Collection::from(BTreeMap::from([(
+                            Kind::array(Collection::from(IndexMap::from([(
                                 0.into(),
                                 Kind::float(),
                             )]))),
@@ -645,7 +646,7 @@ mod test {
                     ]))),
                     path: owned_value_path!(0, 0),
                     compact: true,
-                    want: Kind::array(Collection::from(BTreeMap::from([(
+                    want: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::bytes(),
                     )]))),
@@ -655,11 +656,11 @@ mod test {
             (
                 "remove nested index, maybe compact",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([
+                    kind: Kind::array(Collection::from(IndexMap::from([
                         (
                             0.into(),
                             Kind::array(
-                                Collection::from(BTreeMap::from([(0.into(), Kind::float())]))
+                                Collection::from(IndexMap::from([(0.into(), Kind::float())]))
                                     .with_unknown(Kind::regex()),
                             ),
                         ),
@@ -667,7 +668,7 @@ mod test {
                     ]))),
                     path: owned_value_path!(0, 0),
                     compact: true,
-                    want: Kind::array(Collection::from(BTreeMap::from([
+                    want: Kind::array(Collection::from(IndexMap::from([
                         (
                             0.into(),
                             Kind::array(Collection::empty().with_unknown(Kind::regex())).or_bytes(),
@@ -680,7 +681,7 @@ mod test {
             (
                 "remove nested index, maybe compact",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([
+                    kind: Kind::array(Collection::from(IndexMap::from([
                         (
                             0.into(),
                             Kind::array(Collection::empty().with_unknown(Kind::any())),
@@ -689,7 +690,7 @@ mod test {
                     ]))),
                     path: owned_value_path!(0, 0, 0),
                     compact: true,
-                    want: Kind::array(Collection::from(BTreeMap::from([
+                    want: Kind::array(Collection::from(IndexMap::from([
                         (
                             0.into(),
                             Kind::array(Collection::empty().with_unknown(Kind::any())).or_bytes(),
@@ -702,10 +703,10 @@ mod test {
             (
                 "remove nested negative index, compact",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([
+                    kind: Kind::array(Collection::from(IndexMap::from([
                         (
                             0.into(),
-                            Kind::array(Collection::from(BTreeMap::from([(
+                            Kind::array(Collection::from(IndexMap::from([(
                                 0.into(),
                                 Kind::integer(),
                             )]))),
@@ -714,7 +715,7 @@ mod test {
                     ]))),
                     path: owned_value_path!(-2, 0),
                     compact: true,
-                    want: Kind::array(Collection::from(BTreeMap::from([(
+                    want: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::bytes(),
                     )]))),
@@ -725,9 +726,9 @@ mod test {
                 "remove nested negative unknown index",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([(
+                        Collection::from(IndexMap::from([(
                             0.into(),
-                            Kind::array(Collection::from(BTreeMap::from([(
+                            Kind::array(Collection::from(IndexMap::from([(
                                 0.into(),
                                 Kind::integer(),
                             )]))),
@@ -737,9 +738,9 @@ mod test {
                     path: owned_value_path!(-1, 0),
                     compact: false,
                     want: Kind::array(
-                        Collection::from(BTreeMap::from([(
+                        Collection::from(IndexMap::from([(
                             0.into(),
-                            Kind::array(Collection::from(BTreeMap::from([(
+                            Kind::array(Collection::from(IndexMap::from([(
                                 0.into(),
                                 Kind::integer().or_undefined(),
                             )]))),

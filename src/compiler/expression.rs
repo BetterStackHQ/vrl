@@ -349,7 +349,7 @@ impl From<Return> for Expr {
 
 impl From<Value> for Expr {
     fn from(value: Value) -> Self {
-        use std::collections::BTreeMap;
+        use indexmap::IndexMap;
 
         use crate::value::Value::{
             Array, Boolean, Bytes, Float, Integer, Null, Object, Regex, Timestamp,
@@ -364,7 +364,7 @@ impl From<Value> for Expr {
                 let object = super::expression::Object::from(
                     v.into_iter()
                         .map(|(k, v)| (k, v.into()))
-                        .collect::<BTreeMap<_, _>>(),
+                        .collect::<IndexMap<_, _>>(),
                 );
 
                 Container::new(container::Variant::from(object)).into()

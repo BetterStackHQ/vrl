@@ -1,5 +1,5 @@
 use crate::compiler::prelude::*;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 fn parse_aws_vpc_flow_log(value: Value, format: Option<Value>) -> Resolved {
     let bytes = value.try_bytes()?;
@@ -115,8 +115,8 @@ impl FunctionExpression for ParseAwsVpcFlowLogFn {
     }
 }
 
-fn inner_kind() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn inner_kind() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         (Field::from("account_id"), Kind::bytes() | Kind::null()),
         (Field::from("action"), Kind::bytes() | Kind::null()),
         (Field::from("az_id"), Kind::bytes() | Kind::null()),
@@ -189,7 +189,7 @@ macro_rules! create_match {
 }
 
 fn parse_log(input: &str, format: Option<&str>) -> ParseResult<Value> {
-    let mut log = BTreeMap::new();
+    let mut log = IndexMap::new();
 
     let mut input = input.split(' ');
     let mut format = format

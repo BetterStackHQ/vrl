@@ -1,5 +1,5 @@
 use crate::compiler::prelude::*;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 use url::Url;
 
 #[derive(Clone, Copy, Debug)]
@@ -105,7 +105,7 @@ impl FunctionExpression for ParseUrlFn {
 }
 
 fn url_to_value(url: Url, default_known_ports: bool) -> Value {
-    let mut map = BTreeMap::<&str, Value>::new();
+    let mut map = IndexMap::<&str, Value>::new();
 
     map.insert("scheme", url.scheme().to_owned().into());
     map.insert("username", url.username().to_owned().into());
@@ -140,8 +140,8 @@ fn url_to_value(url: Url, default_known_ports: bool) -> Value {
         .collect::<Value>()
 }
 
-fn inner_kind() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn inner_kind() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         ("scheme".into(), Kind::bytes()),
         ("username".into(), Kind::bytes()),
         ("password".into(), Kind::bytes()),

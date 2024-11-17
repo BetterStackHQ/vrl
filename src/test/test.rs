@@ -1,4 +1,5 @@
-use std::{collections::BTreeMap, fs, path::Path};
+use std::{fs, path::Path};
+use indexmap::IndexMap;
 
 use crate::compiler::function::Example;
 use crate::path::parse_value_path;
@@ -116,7 +117,7 @@ impl Test {
 
         let mut error = None;
         let object = if object.is_empty() {
-            Value::Object(BTreeMap::default())
+            Value::Object(IndexMap::default())
         } else {
             serde_json::from_str::<'_, Value>(&object).unwrap_or_else(|err| {
                 error = Some(format!("unable to parse object as JSON: {}", err));
@@ -145,7 +146,7 @@ impl Test {
     }
 
     pub fn from_example(func: impl ToString, example: &Example) -> Self {
-        let object = Value::Object(BTreeMap::default());
+        let object = Value::Object(IndexMap::default());
         let result = match example.result {
             Ok(string) => string.to_owned(),
             Err(err) => err.to_string(),

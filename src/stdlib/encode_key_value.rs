@@ -168,7 +168,7 @@ impl FunctionExpression for EncodeKeyValueFn {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use indexmap::IndexMap;
 
     use crate::{
         btreemap,
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn test_encode_decode_cycle() {
         let before: Value = {
-            let mut map = Value::from(BTreeMap::default());
+            let mut map = Value::from(IndexMap::default());
             map.insert("key", r#"this has a " quote"#);
             map
         };

@@ -1,5 +1,6 @@
 use crate::compiler::prelude::*;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
+use indexmap::IndexMap;
 
 fn tally(value: Value) -> Resolved {
     let value = value.try_array()?;
@@ -12,7 +13,7 @@ fn tally(value: Value) -> Resolved {
             return Err(format!("all values must be strings, found: {value:?}").into());
         }
     }
-    let map: BTreeMap<_, _> = map
+    let map: IndexMap<_, _> = map
         .into_iter()
         .map(|(k, v)| {
             (

@@ -4,7 +4,7 @@ use super::{
 };
 use crate::path::parse_value_path;
 use crate::value::{ObjectMap, Value};
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 use tracing::error;
 
 /// Errors which cause the Datadog grok algorithm to stop processing and not return a parsed result.
@@ -58,7 +58,7 @@ pub fn parse_grok(
 /// Internal Errors:
 /// - FailedToApplyFilter - matches the rule, but there was a runtime error while applying on of the filters
 fn apply_grok_rule(source: &str, grok_rule: &GrokRule) -> Result<ParsedGrokObject, FatalError> {
-    let mut parsed = Value::Object(BTreeMap::new());
+    let mut parsed = Value::Object(IndexMap::new());
     let mut internal_errors = vec![];
 
     match grok_rule.pattern.match_against(source) {
@@ -186,7 +186,7 @@ mod tests {
                 "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{GREEDYDATA:message}"
                     .to_string(),
             ],
-            BTreeMap::new(),
+            IndexMap::new(),
         )
         .expect("couldn't parse rules");
         let parsed = parse_grok("2020-10-02T23:22:12.223222Z info Hello world", &rules)
@@ -297,7 +297,7 @@ mod tests {
                 internal_errors: vec![],
             });
             let rules =
-                parse_grok_rules(&[filter.to_string()], BTreeMap::new()).unwrap_or_else(|error| {
+                parse_grok_rules(&[filter.to_string()], IndexMap::new()).unwrap_or_else(|error| {
                     panic!("failed to parse {k} with filter {filter}: {error}")
                 });
             let parsed = parse_grok(k, &rules);
@@ -324,7 +324,7 @@ mod tests {
                 parsed,
                 internal_errors: vec![],
             });
-            let rules = parse_grok_rules(&[filter.to_string()], BTreeMap::new())
+            let rules = parse_grok_rules(&[filter.to_string()], IndexMap::new())
                 .unwrap_or_else(|_| panic!("failed to parse {k} with filter {filter}"));
             let parsed = parse_grok(k, &rules);
 
@@ -336,7 +336,7 @@ mod tests {
         tests: Vec<(&str, &str, Result<ParsedGrokObject, FatalError>)>,
     ) {
         for (filter, k, v) in tests {
-            let rules = parse_grok_rules(&[filter.to_string()], BTreeMap::new())
+            let rules = parse_grok_rules(&[filter.to_string()], IndexMap::new())
                 .unwrap_or_else(|_| panic!("failed to parse {k} with filter {filter}"));
             let parsed = parse_grok(k, &rules);
 
@@ -347,7 +347,7 @@ mod tests {
     #[test]
     fn fails_on_unknown_pattern_definition() {
         assert_eq!(
-            parse_grok_rules(&["%{unknown}".to_string()], BTreeMap::new())
+            parse_grok_rules(&["%{unknown}".to_string()], IndexMap::new())
                 .unwrap_err()
                 .to_string(),
             r#"failed to parse grok expression '(?m)\A%{unknown}\z': The given pattern definition name "unknown" could not be found in the definition map"#
@@ -359,7 +359,7 @@ mod tests {
         assert_eq!(
             parse_grok_rules(
                 &["%{data:field:unknownFilter}".to_string()],
-                BTreeMap::new(),
+                IndexMap::new(),
             )
             .unwrap_err()
             .to_string(),
@@ -370,7 +370,7 @@ mod tests {
     #[test]
     fn fails_on_invalid_matcher_parameter() {
         assert_eq!(
-            parse_grok_rules(&["%{regex(1):field}".to_string()], BTreeMap::new())
+            parse_grok_rules(&["%{regex(1):field}".to_string()], IndexMap::new())
                 .unwrap_err()
                 .to_string(),
             "invalid arguments for the function 'regex'"
@@ -380,7 +380,7 @@ mod tests {
     #[test]
     fn fails_on_invalid_filter_parameter() {
         assert_eq!(
-            parse_grok_rules(&["%{data:field:scale()}".to_string()], BTreeMap::new())
+            parse_grok_rules(&["%{data:field:scale()}".to_string()], IndexMap::new())
                 .unwrap_err()
                 .to_string(),
             "invalid arguments for the function 'scale'"
@@ -460,7 +460,7 @@ mod tests {
             "%{notSpace:field1:integer} %{data:field2:json}",
             "not_a_number not a json",
             Ok(ParsedGrokObject {
-                parsed: Value::from(BTreeMap::new()),
+                parsed: Value::from(IndexMap::new()),
                 internal_errors: vec![
                     InternalError::FailedToApplyFilter(
                         "Integer".to_owned(),
@@ -482,7 +482,7 @@ mod tests {
                 "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{GREEDYDATA:message}"
                     .to_string(),
             ],
-            BTreeMap::new(),
+            IndexMap::new(),
         )
         .expect("couldn't parse rules");
         let error = parse_grok("an ungrokkable message", &rules).unwrap_err();
@@ -506,7 +506,7 @@ mod tests {
         let rules = parse_grok_rules(
             // patterns
             &[pattern],
-            BTreeMap::new(),
+            IndexMap::new(),
         )
         .expect("couldn't parse rules");
 
@@ -522,7 +522,7 @@ mod tests {
                 r#"%{integer:nested.field} %{notSpace:nested.field:uppercase} %{notSpace:nested.field:nullIf("-")}"#
                     .to_string(),
             ],
-            BTreeMap::new(),
+            IndexMap::new(),
         )
             .expect("couldn't parse rules");
         let parsed = parse_grok("1 info message", &rules).unwrap().parsed;
@@ -728,7 +728,7 @@ mod tests {
         assert_eq!(
             parse_grok_rules(
                 &[r#"%{date("ABC:XYZ"):field}"#.to_string()],
-                BTreeMap::new(),
+                IndexMap::new(),
             )
             .unwrap_err()
             .to_string(),
@@ -737,7 +737,7 @@ mod tests {
         assert_eq!(
             parse_grok_rules(
                 &[r#"%{date("EEE MMM dd HH:mm:ss yyyy", "unknown timezone"):field}"#.to_string()],
-                BTreeMap::new(),
+                IndexMap::new(),
             )
             .unwrap_err()
             .to_string(),
@@ -816,7 +816,7 @@ mod tests {
                 "%{data:field:array}",
                 "abc",
                 Ok(ParsedGrokObject {
-                    parsed: Value::from(BTreeMap::new()),
+                    parsed: Value::from(IndexMap::new()),
                     internal_errors: vec![InternalError::FailedToApplyFilter(
                         "Array(..)".to_owned(),
                         "\"abc\"".to_owned(),
@@ -828,7 +828,7 @@ mod tests {
                 "%{data:field:array(scale(10))}",
                 "[a,b]",
                 Ok(ParsedGrokObject {
-                    parsed: Value::from(BTreeMap::new()),
+                    parsed: Value::from(IndexMap::new()),
                     internal_errors: vec![InternalError::FailedToApplyFilter(
                         "Scale(..)".to_owned(),
                         "\"a\"".to_owned(),
@@ -965,7 +965,7 @@ mod tests {
             (
                 "%{data::keyvalue}",
                 "key:=valueStr",
-                Ok(Value::from(BTreeMap::new())),
+                Ok(Value::from(IndexMap::new())),
             ),
             // empty key or null
             (
@@ -987,7 +987,7 @@ mod tests {
             (
                 "%{data::keyvalue}",
                 "=,=value",
-                Ok(Value::from(BTreeMap::new())),
+                Ok(Value::from(IndexMap::new())),
             ),
             // type inference
             (
@@ -1017,17 +1017,17 @@ mod tests {
             (
                 "%{data::keyvalue}",
                 "key = valueStr",
-                Ok(Value::from(BTreeMap::new())),
+                Ok(Value::from(IndexMap::new())),
             ),
             (
                 "%{data::keyvalue}",
                 "key= valueStr",
-                Ok(Value::from(BTreeMap::new())),
+                Ok(Value::from(IndexMap::new())),
             ),
             (
                 "%{data::keyvalue}",
                 "key =valueStr",
-                Ok(Value::from(BTreeMap::new())),
+                Ok(Value::from(IndexMap::new())),
             ),
             (
                 r#"%{data::keyvalue(":")}"#,

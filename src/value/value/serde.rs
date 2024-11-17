@@ -1,4 +1,5 @@
-use std::{borrow::Cow, collections::BTreeMap, fmt};
+use std::{borrow::Cow, fmt};
+use indexmap::IndexMap;
 
 use bytes::Bytes;
 use ordered_float::NotNan;
@@ -178,7 +179,7 @@ impl<'de> Deserialize<'de> for Value {
             where
                 V: MapAccess<'de>,
             {
-                let mut map = BTreeMap::new();
+                let mut map = IndexMap::new();
                 while let Some((key, value)) = visitor.next_entry()? {
                     map.insert(key, value);
                 }

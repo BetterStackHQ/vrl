@@ -84,7 +84,8 @@ impl DefaultValue for Kind {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashMap};
+    use indexmap::IndexMap;
+    use indexmap::IndexMap;
 
     use super::*;
 
@@ -149,10 +150,10 @@ mod tests {
                 "object",
                 TestCase {
                     value: value!({ "foo": { "bar": 12_i64 }, "baz": true }),
-                    want: Kind::object(BTreeMap::from([
+                    want: Kind::object(IndexMap::from([
                         (
                             "foo".into(),
-                            Kind::object(BTreeMap::from([("bar".into(), Kind::integer())])),
+                            Kind::object(IndexMap::from([("bar".into(), Kind::integer())])),
                         ),
                         ("baz".into(), Kind::boolean()),
                     ])),
@@ -162,13 +163,13 @@ mod tests {
                 "array",
                 TestCase {
                     value: value!([12_i64, true, "foo", { "bar": null }]),
-                    want: Kind::array(BTreeMap::from([
+                    want: Kind::array(IndexMap::from([
                         (0.into(), Kind::integer()),
                         (1.into(), Kind::boolean()),
                         (2.into(), Kind::bytes()),
                         (
                             3.into(),
-                            Kind::object(BTreeMap::from([("bar".into(), Kind::null())])),
+                            Kind::object(IndexMap::from([("bar".into(), Kind::null())])),
                         ),
                     ])),
                 },

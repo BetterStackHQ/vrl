@@ -7,7 +7,7 @@ use nom::{
     sequence::{delimited, preceded},
     IResult,
 };
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 fn parse_aws_alb_log(bytes: Value) -> Resolved {
     let bytes = bytes.try_bytes()?;
@@ -74,8 +74,8 @@ impl FunctionExpression for ParseAwsAlbLogFn {
     }
 }
 
-fn inner_kind() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn inner_kind() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         (
             Field::from("actions_executed"),
             Kind::bytes() | Kind::null(),
@@ -130,7 +130,7 @@ fn inner_kind() -> BTreeMap<Field, Kind> {
 }
 
 fn parse_log(mut input: &str) -> ExpressionResult<Value> {
-    let mut log = BTreeMap::<KeyString, Value>::new();
+    let mut log = IndexMap::<KeyString, Value>::new();
 
     macro_rules! get_value {
         ($name:expr, $parser:expr) => {{

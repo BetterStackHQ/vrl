@@ -1,7 +1,7 @@
 use std::{
-    collections::BTreeMap,
     fmt::{self, Write},
 };
+use indexmap::IndexMap;
 
 use serde::ser::{
     Error, Serialize, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant,
@@ -38,7 +38,7 @@ impl Error for EncodingError {
 ///
 /// Returns an `EncodingError` if the input contains non-`String` map keys.
 pub fn to_string<V: Serialize>(
-    input: &BTreeMap<KeyString, V>,
+    input: &IndexMap<KeyString, V>,
     fields_order: &[KeyString],
     key_value_delimiter: &str,
     field_delimiter: &str,
@@ -49,7 +49,7 @@ pub fn to_string<V: Serialize>(
     let mut input = flatten(input, '.')?;
 
     for field in fields_order {
-        match (input.remove(field), flatten_boolean) {
+        match (input.shift_remove(field), flatten_boolean) {
             (Some(Data::Boolean(false)), true) | (None, _) => (),
             (Some(Data::Boolean(true)), true) => {
                 encode_string(&mut output, field);
@@ -86,8 +86,8 @@ pub fn to_string<V: Serialize>(
 fn flatten<'a>(
     input: impl IntoIterator<Item = (&'a KeyString, impl Serialize)> + 'a,
     separator: char,
-) -> Result<BTreeMap<KeyString, Data>, EncodingError> {
-    let mut map = BTreeMap::new();
+) -> Result<IndexMap<KeyString, Data>, EncodingError> {
+    let mut map = IndexMap::new();
     for (key, value) in input {
         value.serialize(KeyValueSerializer::new(key.clone(), separator, &mut map))?;
     }
@@ -156,11 +156,11 @@ impl fmt::Display for Data {
 struct KeyValueSerializer<'a> {
     key: KeyString,
     separator: char,
-    output: &'a mut BTreeMap<KeyString, Data>,
+    output: &'a mut IndexMap<KeyString, Data>,
 }
 
 impl<'a> KeyValueSerializer<'a> {
-    fn new(key: KeyString, separator: char, output: &'a mut BTreeMap<KeyString, Data>) -> Self {
+    fn new(key: KeyString, separator: char, output: &'a mut IndexMap<KeyString, Data>) -> Self {
         Self {
             key,
             separator,
@@ -752,7 +752,7 @@ mod tests {
     #[test]
     fn non_string_keys() {
         #[derive(Serialize)]
-        struct IntegerMap(BTreeMap<i32, String>);
+        struct IntegerMap(IndexMap<i32, String>);
 
         assert!(&to_string::<IntegerMap>(
             &btreemap! {

@@ -1,7 +1,7 @@
 use crate::compiler::prelude::*;
 use chrono::{serde::ts_milliseconds, DateTime, Utc};
 use serde::Deserialize;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 #[derive(Debug, Deserialize, Clone, Copy)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE", deny_unknown_fields)]
@@ -44,7 +44,7 @@ fn parse_aws_cloudwatch_log_subscription_message(bytes: Value) -> Resolved {
     let bytes = bytes.try_bytes()?;
     let message = serde_json::from_slice::<AwsCloudWatchLogsSubscriptionMessage>(&bytes)
         .map_err(|e| format!("unable to parse: {e}"))?;
-    let map = Value::from(BTreeMap::from([
+    let map = Value::from(IndexMap::from([
         (KeyString::from("owner"), Value::from(message.owner)),
         (
             KeyString::from("message_type"),
@@ -66,7 +66,7 @@ fn parse_aws_cloudwatch_log_subscription_message(bytes: Value) -> Resolved {
                     .log_events
                     .into_iter()
                     .map(|event| {
-                        Value::from(BTreeMap::from([
+                        Value::from(IndexMap::from([
                             (KeyString::from("id"), Value::from(event.id)),
                             (KeyString::from("timestamp"), Value::from(event.timestamp)),
                             (KeyString::from("message"), Value::from(event.message)),
@@ -159,8 +159,8 @@ impl FunctionExpression for ParseAwsCloudWatchLogSubscriptionMessageFn {
     }
 }
 
-fn inner_kind() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn inner_kind() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         (Field::from("owner"), Kind::bytes()),
         (Field::from("message_type"), Kind::bytes()),
         (Field::from("log_group"), Kind::bytes()),
@@ -175,7 +175,7 @@ fn inner_kind() -> BTreeMap<Field, Kind> {
         ),
         (
             Field::from("log_events"),
-            Kind::array(Collection::from_unknown(Kind::object(BTreeMap::from([
+            Kind::array(Collection::from_unknown(Kind::object(IndexMap::from([
                 (Field::from("id"), Kind::bytes()),
                 (Field::from("timestamp"), Kind::timestamp()),
                 (Field::from("message"), Kind::bytes()),

@@ -1,4 +1,5 @@
-use std::{collections::BTreeMap, fmt, ops::Deref};
+use std::{fmt, ops::Deref};
+use indexmap::IndexMap;
 
 use crate::value::{KeyString, Value};
 use crate::{
@@ -12,18 +13,18 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Object {
-    inner: BTreeMap<KeyString, Expr>,
+    inner: IndexMap<KeyString, Expr>,
 }
 
 impl Object {
     #[must_use]
-    pub fn new(inner: BTreeMap<KeyString, Expr>) -> Self {
+    pub fn new(inner: IndexMap<KeyString, Expr>) -> Self {
         Self { inner }
     }
 }
 
 impl Deref for Object {
-    type Target = BTreeMap<KeyString, Expr>;
+    type Target = IndexMap<KeyString, Expr>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -35,7 +36,7 @@ impl Expression for Object {
         self.inner
             .iter()
             .map(|(key, expr)| expr.resolve(ctx).map(|v| (key.clone(), v)))
-            .collect::<Result<BTreeMap<_, _>, _>>()
+            .collect::<Result<IndexMap<_, _>, _>>()
             .map(Value::Object)
     }
 
@@ -43,7 +44,7 @@ impl Expression for Object {
         self.inner
             .iter()
             .map(|(key, expr)| expr.resolve_constant(state).map(|v| (key.clone(), v)))
-            .collect::<Option<BTreeMap<_, _>>>()
+            .collect::<Option<IndexMap<_, _>>>()
             .map(Value::Object)
     }
 
@@ -52,7 +53,7 @@ impl Expression for Object {
         let mut fallible = false;
         let mut returns = Kind::never();
 
-        let mut type_defs = BTreeMap::new();
+        let mut type_defs = IndexMap::new();
         for (k, expr) in &self.inner {
             let type_def = expr.apply_type_info(&mut state).upgrade_undefined();
             returns.merge_keep(type_def.returns().clone(), false);
@@ -75,7 +76,7 @@ impl Expression for Object {
         let collection = type_defs
             .into_iter()
             .map(|(field, type_def)| (field.into(), type_def.into()))
-            .collect::<BTreeMap<_, _>>();
+            .collect::<IndexMap<_, _>>();
 
         let result = TypeDef::object(collection)
             .maybe_fallible(fallible)
@@ -97,8 +98,8 @@ impl fmt::Display for Object {
     }
 }
 
-impl From<BTreeMap<KeyString, Expr>> for Object {
-    fn from(inner: BTreeMap<KeyString, Expr>) -> Self {
+impl From<IndexMap<KeyString, Expr>> for Object {
+    fn from(inner: IndexMap<KeyString, Expr>) -> Self {
         Self { inner }
     }
 }

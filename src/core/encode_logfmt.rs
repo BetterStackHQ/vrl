@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 use crate::value::{KeyString, Value};
 use serde::Serialize;
@@ -10,7 +10,7 @@ use super::encode_key_value::{to_string as encode_key_value, EncodingError};
 /// # Errors
 ///
 /// Returns an `EncodingError` if any of the keys are not strings.
-pub fn encode_map<V: Serialize>(input: &BTreeMap<KeyString, V>) -> Result<String, EncodingError> {
+pub fn encode_map<V: Serialize>(input: &IndexMap<KeyString, V>) -> Result<String, EncodingError> {
     encode_key_value(input, &[], "=", " ", true)
 }
 
@@ -24,7 +24,7 @@ pub fn encode_value(input: &Value) -> Result<String, EncodingError> {
     if let Some(map) = input.as_object() {
         encode_map(map)
     } else {
-        let mut map = BTreeMap::new();
+        let mut map = IndexMap::new();
         map.insert("message".to_string().into(), &input);
         encode_map(&map)
     }

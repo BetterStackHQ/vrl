@@ -13,10 +13,11 @@ use nom::{
 };
 use std::{
     borrow::Cow,
-    collections::{btree_map::Entry, BTreeMap},
     iter::Peekable,
     str::{Chars, FromStr},
 };
+use indexmap::IndexMap;
+use indexmap::map::Entry;
 
 pub(crate) fn parse_key_value(
     bytes: Value,
@@ -39,7 +40,7 @@ pub(crate) fn parse_key_value(
 
     // Construct Value::Object by grouping values with the same key into an array.
     // This logic depends on values not being arrays which is true for this parser.
-    let mut map = BTreeMap::new();
+    let mut map = IndexMap::new();
     for (key, value) in values {
         match map.entry(key) {
             Entry::Vacant(entry) => {

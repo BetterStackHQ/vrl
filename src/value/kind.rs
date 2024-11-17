@@ -11,7 +11,7 @@ pub mod merge;
 
 pub use crud::*;
 
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 pub use collection::{Collection, Field, Index, Unknown};
 
@@ -21,7 +21,7 @@ use super::Value;
 ///
 /// This struct tracks the known states a type can have. By allowing one type to have multiple
 /// states, the type definition can be progressively refined.
-#[derive(Debug, Clone, Eq, PartialOrd)]
+#[derive(Debug, Clone, Eq)]
 pub struct Kind {
     // NOTE: The internal API uses `Option` over `bool` for primitive types, as it makes internal
     // usage of the API easier to work with. There is no impact on the memory size of the type.
@@ -176,7 +176,7 @@ impl From<&Value> for Kind {
                 object
                     .iter()
                     .map(|(k, v)| (k.clone().into(), v.into()))
-                    .collect::<BTreeMap<_, _>>(),
+                    .collect::<IndexMap<_, _>>(),
             ),
 
             Value::Array(array) => Self::array(
@@ -184,7 +184,7 @@ impl From<&Value> for Kind {
                     .iter()
                     .enumerate()
                     .map(|(i, v)| (i.into(), v.into()))
-                    .collect::<BTreeMap<_, _>>(),
+                    .collect::<IndexMap<_, _>>(),
             ),
         }
     }

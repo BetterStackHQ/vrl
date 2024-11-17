@@ -5,9 +5,10 @@ use crate::parser::ast::Ident;
 use crate::path::OwnedTargetPath;
 use crate::value::{kind::Collection, KeyString, Value};
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     fmt,
 };
+use indexmap::IndexMap;
 
 use super::{
     expression::{container::Variant, Block, Container, Expr, Expression},
@@ -326,7 +327,7 @@ impl ArgumentList {
     pub fn optional_object(
         &self,
         keyword: &'static str,
-    ) -> Result<Option<BTreeMap<KeyString, Expr>>, Error> {
+    ) -> Result<Option<IndexMap<KeyString, Expr>>, Error> {
         self.optional_expr(keyword)
             .map(|expr| match expr {
                 Expr::Container(Container {
@@ -344,7 +345,7 @@ impl ArgumentList {
     pub fn required_object(
         &self,
         keyword: &'static str,
-    ) -> Result<BTreeMap<KeyString, Expr>, Error> {
+    ) -> Result<IndexMap<KeyString, Expr>, Error> {
         Ok(required(self.optional_object(keyword)?))
     }
 

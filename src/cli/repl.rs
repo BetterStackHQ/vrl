@@ -1,6 +1,6 @@
 use crate::compiler::TargetValue;
 use std::borrow::Cow::{self, Borrowed, Owned};
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 use std::rc::Rc;
 
 use crate::compiler::runtime::Runtime;
@@ -102,7 +102,7 @@ pub(crate) fn run(
                         if index == objects.len() {
                             objects.push(TargetValue {
                                 value: Value::Null,
-                                metadata: Value::Object(BTreeMap::new()),
+                                metadata: Value::Object(IndexMap::new()),
                                 secrets: Secrets::new(),
                             });
                         }
@@ -298,7 +298,7 @@ impl Validator for Repl {
         let mut rt = Runtime::new(RuntimeState::default());
         let mut target = TargetValue {
             value: Value::Null,
-            metadata: Value::Object(BTreeMap::new()),
+            metadata: Value::Object(IndexMap::new()),
             secrets: Secrets::new(),
         };
 

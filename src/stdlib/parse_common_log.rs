@@ -1,6 +1,6 @@
 use super::log_util;
 use crate::compiler::prelude::*;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 fn parse_common_log(bytes: Value, timestamp_format: Option<Value>, ctx: &Context) -> Resolved {
     let message = bytes.try_bytes_utf8_lossy()?;
@@ -103,8 +103,8 @@ impl FunctionExpression for ParseCommonLogFn {
     }
 }
 
-fn inner_kind() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn inner_kind() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         (Field::from("host"), Kind::bytes() | Kind::null()),
         (Field::from("identity"), Kind::bytes() | Kind::null()),
         (Field::from("user"), Kind::bytes() | Kind::null()),
@@ -147,13 +147,13 @@ mod tests {
 
         log_line_valid_empty {
             args: func_args![value: "- - - - - - -"],
-            want: Ok(BTreeMap::new()),
+            want: Ok(IndexMap::new()),
             tdef: TypeDef::object(inner_kind()).fallible(),
         }
 
         log_line_valid_empty_variant {
             args: func_args![value: r#"- - - [-] "-" - -"#],
-            want: Ok(BTreeMap::new()),
+            want: Ok(IndexMap::new()),
             tdef: TypeDef::object(inner_kind()).fallible(),
         }
 

@@ -1,11 +1,11 @@
 use crate::compiler::TargetValueRef;
 use std::{
-    collections::BTreeMap,
     fs::File,
     io::{self, Read},
     iter::IntoIterator,
     path::PathBuf,
 };
+use indexmap::IndexMap;
 
 use crate::compiler::runtime::Runtime;
 use crate::compiler::state::RuntimeState;
@@ -84,7 +84,7 @@ impl Opts {
         }?;
 
         match input.as_str() {
-            "" => Ok(vec![Value::Object(BTreeMap::default())]),
+            "" => Ok(vec![Value::Object(IndexMap::default())]),
             _ => input
                 .lines()
                 .map(|line| Ok(serde_to_vrl(serde_json::from_str(line)?)))
@@ -155,7 +155,7 @@ fn run(opts: &Opts, stdlib_functions: Vec<Box<dyn Function>>) -> Result<(), Erro
         }
 
         for mut object in objects {
-            let mut metadata = Value::Object(BTreeMap::new());
+            let mut metadata = Value::Object(IndexMap::new());
             let mut secrets = Secrets::new();
             let mut target = TargetValueRef {
                 value: &mut object,
@@ -198,7 +198,7 @@ fn repl(
         .into_iter()
         .map(|value| TargetValue {
             value,
-            metadata: Value::Object(BTreeMap::new()),
+            metadata: Value::Object(IndexMap::new()),
             secrets: Secrets::new(),
         })
         .collect();
@@ -228,7 +228,7 @@ fn serde_to_vrl(value: serde_json::Value) -> Value {
         JsonValue::Object(v) => v
             .into_iter()
             .map(|(k, v)| (k.into(), serde_to_vrl(v)))
-            .collect::<BTreeMap<_, _>>()
+            .collect::<IndexMap<_, _>>()
             .into(),
         JsonValue::Bool(v) => v.into(),
         JsonValue::Number(v) if v.is_f64() => Value::from_f64_or_zero(v.as_f64().unwrap()),
@@ -246,5 +246,5 @@ fn read<R: Read>(mut reader: R) -> Result<String, Error> {
 }
 
 fn default_objects() -> Vec<Value> {
-    vec![Value::Object(BTreeMap::new())]
+    vec![Value::Object(IndexMap::new())]
 }

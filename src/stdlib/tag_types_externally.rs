@@ -1,5 +1,5 @@
 use crate::compiler::prelude::*;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 #[derive(Clone, Copy, Debug)]
 pub struct TagTypesExternally;
@@ -113,7 +113,7 @@ fn tag_type_externally(value: Value) -> Value {
     };
 
     if let Some(key) = key {
-        BTreeMap::from([(key.to_owned().into(), value)]).into()
+        IndexMap::from([(key.to_owned().into(), value)]).into()
     } else {
         value
     }

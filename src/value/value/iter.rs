@@ -272,7 +272,8 @@ impl From<IterData> for Value {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::HashMap;
+    use indexmap::IndexMap;
 
     use super::*;
 
@@ -320,7 +321,7 @@ mod tests {
             (
                 "object non-recursive",
                 TestCase {
-                    value: Value::Object(BTreeMap::from([("foo".into(), true.into())])),
+                    value: Value::Object(IndexMap::from([("foo".into(), true.into())])),
                     recursive: false,
                     items: vec![true.into()],
                 },
@@ -328,15 +329,15 @@ mod tests {
             (
                 "object recursive",
                 TestCase {
-                    value: BTreeMap::from([(
+                    value: IndexMap::from([(
                         "foo".into(),
-                        BTreeMap::from([("foo".into(), true.into()), ("bar".into(), "baz".into())])
+                        IndexMap::from([("foo".into(), true.into()), ("bar".into(), "baz".into())])
                             .into(),
                     )])
                     .into(),
                     recursive: true,
                     items: vec![
-                        BTreeMap::from([("foo".into(), true.into()), ("bar".into(), "baz".into())])
+                        IndexMap::from([("foo".into(), true.into()), ("bar".into(), "baz".into())])
                             .into(),
                         "baz".into(),
                         true.into(),
@@ -346,10 +347,10 @@ mod tests {
             (
                 "object multi-recursive",
                 TestCase {
-                    value: BTreeMap::from([
+                    value: IndexMap::from([
                         (
                             "foo".into(),
-                            BTreeMap::from([("bar".into(), Value::Null)]).into(),
+                            IndexMap::from([("bar".into(), Value::Null)]).into(),
                         ),
                         ("baz".into(), true.into()),
                     ])
@@ -357,7 +358,7 @@ mod tests {
                     recursive: true,
                     items: vec![
                         true.into(),
-                        BTreeMap::from([("bar".into(), Value::Null)]).into(),
+                        IndexMap::from([("bar".into(), Value::Null)]).into(),
                         Value::Null,
                     ],
                 },
@@ -378,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_mutations() {
-        let data: Value = BTreeMap::from([("foo".into(), vec![true].into())]).into();
+        let data: Value = IndexMap::from([("foo".into(), vec![true].into())]).into();
 
         // Empty vec before recursing means recursion doesn't find any elements.
         let mut iter = data.clone().into_iter(true);
@@ -445,7 +446,7 @@ mod tests {
                 IterItem::Value(value) => values.push(value.clone()),
                 IterItem::KeyValue(key, value) => match value {
                     value @ Value::Array(..) => {
-                        *value = BTreeMap::from([("bar".into(), true.into())]).into();
+                        *value = IndexMap::from([("bar".into(), true.into())]).into();
                         changed = true;
                     }
                     value => values.push(value.clone()),

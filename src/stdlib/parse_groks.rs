@@ -1,4 +1,5 @@
 use crate::compiler::prelude::*;
+use std::hash::RandomState;
 
 #[cfg(not(target_arch = "wasm32"))]
 mod non_wasm {
@@ -137,7 +138,7 @@ impl Function for ParseGroks {
         _ctx: &mut FunctionCompileContext,
         arguments: ArgumentList,
     ) -> Compiled {
-        use std::collections::BTreeMap;
+        use indexmap::IndexMap;
 
         let value = arguments.required("value");
 
@@ -184,7 +185,7 @@ impl Function for ParseGroks {
                     .into_owned();
                 Ok((key, alias))
             })
-            .collect::<std::result::Result<BTreeMap<KeyString, String>, function::Error>>()?;
+            .collect::<std::result::Result<IndexMap<KeyString, String>, function::Error>>()?;
 
         let alias_sources = arguments
             .optional_array("alias_sources")?
@@ -224,7 +225,7 @@ impl Function for ParseGroks {
                     error: "Unable to read alias source",
                 })?;
 
-            aliases.append(&mut src_aliases);
+            aliases.append::<RandomState>(&mut src_aliases);
         }
 
         // we use a datadog library here because it is a superset of grok

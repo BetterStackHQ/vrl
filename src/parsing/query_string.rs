@@ -1,5 +1,5 @@
 use crate::compiler::prelude::*;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 use url::form_urlencoded;
 
 pub(crate) fn parse_query_string(bytes: &Bytes, ignore_keys_without_values: bool) -> Resolved {
@@ -7,7 +7,7 @@ pub(crate) fn parse_query_string(bytes: &Bytes, ignore_keys_without_values: bool
     if !query_string.is_empty() && query_string[0] == b'?' {
         query_string = &query_string[1..];
     }
-    let mut result = BTreeMap::new();
+    let mut result = IndexMap::new();
     let parsed = form_urlencoded::parse(query_string);
     for (k, value) in parsed {
         let value = value.as_ref();

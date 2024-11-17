@@ -91,7 +91,8 @@ impl From<Collection<Index>> for Kind {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::HashMap;
+    use indexmap::IndexMap;
 
     use super::*;
 
@@ -120,14 +121,14 @@ mod tests {
             (
                 "array only",
                 TestCase {
-                    kind: Kind::array(BTreeMap::default()),
+                    kind: Kind::array(IndexMap::default()),
                     want: Kind::never(),
                 },
             ),
             (
                 "object only",
                 TestCase {
-                    kind: Kind::object(BTreeMap::default()),
+                    kind: Kind::object(IndexMap::default()),
                     want: Kind::never(),
                 },
             ),
@@ -136,8 +137,8 @@ mod tests {
                 TestCase {
                     kind: Kind::timestamp()
                         .or_integer()
-                        .or_object(BTreeMap::default())
-                        .or_array(BTreeMap::default()),
+                        .or_object(IndexMap::default())
+                        .or_array(IndexMap::default()),
                     want: Kind::timestamp().or_integer(),
                 },
             ),

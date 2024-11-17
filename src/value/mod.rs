@@ -61,13 +61,13 @@ macro_rules! value {
     });
 
     ({}) => ({
-        $crate::value::Value::Object(::std::collections::BTreeMap::default())
+        $crate::value::Value::Object(::indexmap::IndexMap::default())
     });
 
     ({$($($k1:literal)? $($k2:ident)?: $v:tt),+ $(,)?}) => ({
         let map = vec![$((String::from($($k1)? $(stringify!($k2))?).into(), $crate::value!($v))),+]
             .into_iter()
-            .collect::<::std::collections::BTreeMap<_, $crate::value::Value>>();
+            .collect::<::indexmap::IndexMap<_, $crate::value::Value>>();
 
         $crate::value::Value::Object(map)
     });

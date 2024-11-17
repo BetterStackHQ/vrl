@@ -2,11 +2,11 @@ use crate::compiler::prelude::*;
 use once_cell::sync::Lazy;
 use std::{
     borrow::{Borrow, Cow},
-    collections::BTreeMap,
     fmt,
     str::FromStr,
     sync::Arc,
 };
+use indexmap::IndexMap;
 use uaparser::UserAgentParser as UAParser;
 use woothee::parser::Parser as WootheeParser;
 
@@ -201,33 +201,33 @@ impl Mode {
 
     fn type_def(self) -> TypeDef {
         match self {
-            Mode::Fast | Mode::Reliable => TypeDef::object(BTreeMap::from([
+            Mode::Fast | Mode::Reliable => TypeDef::object(IndexMap::from([
                 (
                     "browser".into(),
-                    Kind::object(BTreeMap::from([
+                    Kind::object(IndexMap::from([
                         ("family".into(), Kind::bytes().or_null()),
                         ("version".into(), Kind::bytes().or_null()),
                     ])),
                 ),
                 (
                     "os".into(),
-                    Kind::object(BTreeMap::from([
+                    Kind::object(IndexMap::from([
                         ("family".into(), Kind::bytes().or_null()),
                         ("version".into(), Kind::bytes().or_null()),
                     ])),
                 ),
                 (
                     "device".into(),
-                    Kind::object(BTreeMap::from([(
+                    Kind::object(IndexMap::from([(
                         "category".into(),
                         Kind::bytes().or_null(),
                     )])),
                 ),
             ])),
-            Mode::Enriched => TypeDef::object(BTreeMap::from([
+            Mode::Enriched => TypeDef::object(IndexMap::from([
                 (
                     "browser".into(),
-                    Kind::object(BTreeMap::from([
+                    Kind::object(IndexMap::from([
                         ("family".into(), Kind::bytes().or_null()),
                         ("version".into(), Kind::bytes().or_null()),
                         ("major".into(), Kind::bytes().or_null()),
@@ -237,7 +237,7 @@ impl Mode {
                 ),
                 (
                     "os".into(),
-                    Kind::object(BTreeMap::from([
+                    Kind::object(IndexMap::from([
                         ("family".into(), Kind::bytes().or_null()),
                         ("version".into(), Kind::bytes().or_null()),
                         ("major".into(), Kind::bytes().or_null()),
@@ -248,7 +248,7 @@ impl Mode {
                 ),
                 (
                     "device".into(),
-                    Kind::object(BTreeMap::from([
+                    Kind::object(IndexMap::from([
                         ("family".into(), Kind::bytes().or_null()),
                         ("category".into(), Kind::bytes().or_null()),
                         ("brand".into(), Kind::bytes().or_null()),

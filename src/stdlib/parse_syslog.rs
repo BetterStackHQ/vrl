@@ -1,6 +1,6 @@
 use crate::compiler::prelude::*;
 use chrono::{DateTime, Datelike, Utc};
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 use syslog_loose::{IncompleteDate, Message, ProcId, Protocol, Variant};
 
 pub(crate) fn parse_syslog(value: Value, ctx: &Context) -> Resolved {
@@ -100,7 +100,7 @@ fn resolve_year((month, _date, _hour, _min, _sec): IncompleteDate) -> i32 {
 
 /// Create a `Value::Map` from the fields of the given syslog message.
 fn message_to_value(message: Message<&str>) -> Value {
-    let mut result = BTreeMap::new();
+    let mut result = IndexMap::new();
 
     result.insert("message".to_string().into(), message.msg.to_string().into());
 
@@ -148,7 +148,7 @@ fn message_to_value(message: Message<&str>) -> Value {
     }
 
     for element in message.structured_data {
-        let mut sdata = BTreeMap::new();
+        let mut sdata = IndexMap::new();
         for (name, value) in element.params() {
             sdata.insert(name.to_string().into(), value.into());
         }
@@ -158,8 +158,8 @@ fn message_to_value(message: Message<&str>) -> Value {
     result.into()
 }
 
-fn inner_kind() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn inner_kind() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         ("message".into(), Kind::bytes()),
         ("hostname".into(), Kind::bytes().or_null()),
         ("severity".into(), Kind::bytes().or_null()),

@@ -54,7 +54,7 @@ macro_rules! bench_function {
                     let (expression, want) = $crate::__prep_bench_or_test!($func, &state, $args, $(Ok($crate::value::Value::from($ok)))? $(Err($err.to_owned()))?);
                     let expression = expression.unwrap();
                     let mut runtime_state = $crate::compiler::state::RuntimeState::default();
-                    let mut target: $crate::value::Value = ::std::collections::BTreeMap::default().into();
+                    let mut target: $crate::value::Value = ::indexmap::IndexMap::default().into();
                     let tz = $crate::compiler::TimeZone::Named(chrono_tz::Tz::UTC);
                     let mut ctx = $crate::compiler::Context::new(&mut target, &mut runtime_state, &tz);
 
@@ -95,7 +95,7 @@ macro_rules! test_function {
                 match expression {
                     Ok(expression) => {
                         let mut runtime_state = $crate::compiler::state::RuntimeState::default();
-                        let mut target: $crate::value::Value = ::std::collections::BTreeMap::default().into();
+                        let mut target: $crate::value::Value = ::indexmap::IndexMap::default().into();
                         let tz = $tz;
                         let mut ctx = $crate::compiler::Context::new(&mut target, &mut runtime_state, &tz);
 
@@ -151,7 +151,7 @@ macro_rules! type_def {
 
     (object {$(unknown => $unknown:expr,)? $($key:literal => $value:expr,)+ }) => {{
         #[allow(unused_mut)]
-        let mut v = $crate::value::kind::Collection::from(::std::collections::BTreeMap::from([$(($key.into(), $value.into()),)+]));
+        let mut v = $crate::value::kind::Collection::from(::indexmap::IndexMap::from([$(($key.into(), $value.into()),)+]));
         $(v.set_unknown($crate::value::Kind::from($unknown));)?
 
         TypeDef::object(v)
@@ -164,7 +164,7 @@ macro_rules! type_def {
     }};
 
     (array { $(unknown => $unknown:expr,)? $($idx:literal => $value:expr,)+ }) => {{
-        let mut v = $crate::value::kind::Collection::from(::std::collections::BTreeMap::from([$(($idx.into(), $value.into()),)+]));
+        let mut v = $crate::value::kind::Collection::from(::indexmap::IndexMap::from([$(($idx.into(), $value.into()),)+]));
         $(v.set_unknown($crate::value::Kind::from($unknown));)?
 
         TypeDef::array(v)

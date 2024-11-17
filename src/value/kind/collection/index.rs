@@ -82,9 +82,9 @@ impl Collection<Index> {
     /// elements to the left.
     pub fn remove_shift(&mut self, index: usize) {
         let min_length = self.min_length();
-        self.known_mut().remove(&index.into());
+        self.known_mut().remove::<Index>(&index.into());
         for i in index..min_length {
-            if let Some(value) = self.known_mut().remove(&(index + 1).into()) {
+            if let Some(value) = self.known_mut().remove::<Index>(&(index + 1).into()) {
                 self.known_mut().insert(index.into(), value);
             }
         }

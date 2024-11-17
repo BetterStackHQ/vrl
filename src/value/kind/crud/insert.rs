@@ -3,6 +3,7 @@
 use crate::path::{BorrowedSegment, ValuePath};
 use crate::value::kind::Collection;
 use crate::value::Kind;
+use crate::value::kind::collection::Index;
 
 impl Kind {
     /// Insert the `Kind` at the given `path` within `self`.
@@ -161,7 +162,7 @@ impl Kind {
                     debug_assert!(index >= 0, "all negative cases have been handled");
                     let index = index as usize;
 
-                    let index_exists = collection.known().contains_key(&index.into());
+                    let index_exists = collection.known().contains_key::<Index>(&index.into());
                     if !index_exists {
                         // Add "null" to all holes, adding it to the "unknown" if it exists.
                         // Holes can never be undefined.
@@ -192,7 +193,7 @@ impl Kind {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use indexmap::IndexMap;
 
     use crate::owned_value_path;
     use crate::path::{parse_value_path, OwnedValuePath};
@@ -233,8 +234,8 @@ mod tests {
                 TestCase {
                     this: Kind::bytes(),
                     path: owned_value_path!(),
-                    kind: Kind::object(BTreeMap::from([("a".into(), Kind::integer())])),
-                    expected: Kind::object(BTreeMap::from([("a".into(), Kind::integer())])),
+                    kind: Kind::object(IndexMap::from([("a".into(), Kind::integer())])),
+                    expected: Kind::object(IndexMap::from([("a".into(), Kind::integer())])),
                 },
             ),
             (
@@ -243,16 +244,16 @@ mod tests {
                     this: Kind::object(Collection::empty()),
                     path: owned_value_path!("a"),
                     kind: Kind::integer(),
-                    expected: Kind::object(BTreeMap::from([("a".into(), Kind::integer())])),
+                    expected: Kind::object(IndexMap::from([("a".into(), Kind::integer())])),
                 },
             ),
             (
                 "non-empty object insert field",
                 TestCase {
-                    this: Kind::object(BTreeMap::from([("b".into(), Kind::bytes())])),
+                    this: Kind::object(IndexMap::from([("b".into(), Kind::bytes())])),
                     path: owned_value_path!("a"),
                     kind: Kind::integer(),
-                    expected: Kind::object(BTreeMap::from([
+                    expected: Kind::object(IndexMap::from([
                         ("a".into(), Kind::integer()),
                         ("b".into(), Kind::bytes()),
                     ])),
@@ -261,10 +262,10 @@ mod tests {
             (
                 "object overwrite field",
                 TestCase {
-                    this: Kind::object(BTreeMap::from([("a".into(), Kind::bytes())])),
+                    this: Kind::object(IndexMap::from([("a".into(), Kind::bytes())])),
                     path: owned_value_path!("a"),
                     kind: Kind::integer(),
-                    expected: Kind::object(BTreeMap::from([("a".into(), Kind::integer())])),
+                    expected: Kind::object(IndexMap::from([("a".into(), Kind::integer())])),
                 },
             ),
             (
@@ -273,7 +274,7 @@ mod tests {
                     this: Kind::array(Collection::empty()),
                     path: owned_value_path!(0),
                     kind: Kind::integer(),
-                    expected: Kind::array(BTreeMap::from([(0.into(), Kind::integer())])),
+                    expected: Kind::array(IndexMap::from([(0.into(), Kind::integer())])),
                 },
             ),
             (
@@ -282,7 +283,7 @@ mod tests {
                     this: Kind::array(Collection::empty()),
                     path: owned_value_path!(1),
                     kind: Kind::integer(),
-                    expected: Kind::array(BTreeMap::from([
+                    expected: Kind::array(IndexMap::from([
                         (0.into(), Kind::null()),
                         (1.into(), Kind::integer()),
                     ])),
@@ -295,7 +296,7 @@ mod tests {
                     path: owned_value_path!(1),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::integer().or_null()),
                             (1.into(), Kind::bytes()),
                         ]))
@@ -310,11 +311,11 @@ mod tests {
                     path: owned_value_path!(1, "foo"),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::integer().or_null()),
                             (
                                 1.into(),
-                                Kind::object(BTreeMap::from([("foo".into(), Kind::bytes())])),
+                                Kind::object(IndexMap::from([("foo".into(), Kind::bytes())])),
                             ),
                         ]))
                         .with_unknown(Kind::integer()),
@@ -328,7 +329,7 @@ mod tests {
                     path: owned_value_path!(1),
                     kind: Kind::integer(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::null()),
                             (1.into(), Kind::integer()),
                         ]))
@@ -342,7 +343,7 @@ mod tests {
                     this: Kind::integer(),
                     path: owned_value_path!("a"),
                     kind: Kind::integer(),
-                    expected: Kind::object(BTreeMap::from([("a".into(), Kind::integer())])),
+                    expected: Kind::object(IndexMap::from([("a".into(), Kind::integer())])),
                 },
             ),
             (
@@ -351,19 +352,19 @@ mod tests {
                     this: Kind::integer(),
                     path: owned_value_path!(0),
                     kind: Kind::integer(),
-                    expected: Kind::array(BTreeMap::from([(0.into(), Kind::integer())])),
+                    expected: Kind::array(IndexMap::from([(0.into(), Kind::integer())])),
                 },
             ),
             (
                 "set negative array index (no unknown)",
                 TestCase {
-                    this: Kind::array(BTreeMap::from([
+                    this: Kind::array(IndexMap::from([
                         (0.into(), Kind::integer()),
                         (1.into(), Kind::integer()),
                     ])),
                     path: owned_value_path!(-1),
                     kind: Kind::bytes(),
-                    expected: Kind::array(BTreeMap::from([
+                    expected: Kind::array(IndexMap::from([
                         (0.into(), Kind::integer()),
                         (1.into(), Kind::bytes()),
                     ])),
@@ -372,10 +373,10 @@ mod tests {
             (
                 "set negative array index past the end (no unknown)",
                 TestCase {
-                    this: Kind::array(BTreeMap::from([(0.into(), Kind::integer())])),
+                    this: Kind::array(IndexMap::from([(0.into(), Kind::integer())])),
                     path: owned_value_path!(-2),
                     kind: Kind::bytes(),
-                    expected: Kind::array(BTreeMap::from([
+                    expected: Kind::array(IndexMap::from([
                         (0.into(), Kind::bytes()),
                         (1.into(), Kind::null()),
                     ])),
@@ -385,13 +386,13 @@ mod tests {
                 "set negative array index size 1 unknown array",
                 TestCase {
                     this: Kind::array(
-                        Collection::from(BTreeMap::from([(0.into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([(0.into(), Kind::integer())]))
                             .with_unknown(Kind::integer()),
                     ),
                     path: owned_value_path!(-1),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([(0.into(), Kind::bytes().or_integer())]))
+                        Collection::from(IndexMap::from([(0.into(), Kind::bytes().or_integer())]))
                             .with_unknown(Kind::integer().or_bytes().or_undefined()),
                     ),
                 },
@@ -403,7 +404,7 @@ mod tests {
                     path: owned_value_path!(-1),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             // we can prove the first index will not be undefined
                             (0.into(), Kind::bytes().or_integer()),
                         ]))
@@ -418,7 +419,7 @@ mod tests {
                     path: owned_value_path!(-2),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::integer().or_bytes()),
                             // This is the only location a hole could potentially be inserted, so it
                             // is the only index that gets "null", rather than adding it to the
@@ -433,7 +434,7 @@ mod tests {
                 "set negative array index unknown array",
                 TestCase {
                     this: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             // This would be an invalid type without index 0 (it can't be undefined).
                             (0.into(), Kind::integer()),
                             (1.into(), Kind::float()),
@@ -443,7 +444,7 @@ mod tests {
                     path: owned_value_path!(-3),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             // Either the unknown (integer) or the inserted value, depending on the actual length.
                             (0.into(), Kind::integer().or_bytes()),
                             // The original float if it wasn't shifted, or bytes/integer if it was shifted.
@@ -459,7 +460,7 @@ mod tests {
                 "set negative array index unknown array no holes",
                 TestCase {
                     this: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::float()),
                             (1.into(), Kind::float()),
                             (2.into(), Kind::float()),
@@ -469,7 +470,7 @@ mod tests {
                     path: owned_value_path!(-3),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::float().or_bytes()),
                             (1.into(), Kind::float().or_bytes()),
                             (2.into(), Kind::float().or_bytes()),
@@ -484,7 +485,7 @@ mod tests {
                     this: Kind::integer(),
                     path: owned_value_path!(-3),
                     kind: Kind::bytes(),
-                    expected: Kind::array(Collection::from(BTreeMap::from([
+                    expected: Kind::array(Collection::from(IndexMap::from([
                         (0.into(), Kind::bytes()),
                         (1.into(), Kind::null()),
                         (2.into(), Kind::null()),
@@ -498,29 +499,29 @@ mod tests {
                     path: owned_value_path!(-3, "foo"),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (
                                 0.into(),
                                 Kind::integer()
-                                    .or_object(BTreeMap::from([("foo".into(), Kind::bytes())])),
+                                    .or_object(IndexMap::from([("foo".into(), Kind::bytes())])),
                             ),
                             (
                                 1.into(),
                                 Kind::integer()
                                     .or_null()
-                                    .or_object(BTreeMap::from([("foo".into(), Kind::bytes())])),
+                                    .or_object(IndexMap::from([("foo".into(), Kind::bytes())])),
                             ),
                             (
                                 2.into(),
                                 Kind::integer()
                                     .or_null()
-                                    .or_object(BTreeMap::from([("foo".into(), Kind::bytes())])),
+                                    .or_object(IndexMap::from([("foo".into(), Kind::bytes())])),
                             ),
                         ]))
                         .with_unknown(
                             Kind::integer()
                                 .or_undefined()
-                                .or_object(BTreeMap::from([("foo".into(), Kind::bytes())])),
+                                .or_object(IndexMap::from([("foo".into(), Kind::bytes())])),
                         ),
                     ),
                 },
@@ -529,21 +530,21 @@ mod tests {
                 "set nested negative array index on unknown array (no holes)",
                 TestCase {
                     this: Kind::array(
-                        Collection::from(BTreeMap::from([(0.into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([(0.into(), Kind::integer())]))
                             .with_unknown(Kind::integer()),
                     ),
                     path: owned_value_path!(-1, "foo"),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([(
+                        Collection::from(IndexMap::from([(
                             0.into(),
                             Kind::integer()
-                                .or_object(BTreeMap::from([("foo".into(), Kind::bytes())])),
+                                .or_object(IndexMap::from([("foo".into(), Kind::bytes())])),
                         )]))
                         .with_unknown(
                             Kind::integer()
                                 .or_undefined()
-                                .or_object(BTreeMap::from([("foo".into(), Kind::bytes())])),
+                                .or_object(IndexMap::from([("foo".into(), Kind::bytes())])),
                         ),
                     ),
                 },
@@ -572,7 +573,7 @@ mod tests {
                     this: Kind::object(Collection::empty()),
                     path: parse_value_path(".x").unwrap(),
                     kind: Kind::undefined(),
-                    expected: Kind::object(BTreeMap::from([("x".into(), Kind::null())])),
+                    expected: Kind::object(IndexMap::from([("x".into(), Kind::null())])),
                 },
             ),
             (
@@ -582,7 +583,7 @@ mod tests {
                     path: owned_value_path!(2),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::any().without_undefined()),
                             (1.into(), Kind::any().without_undefined()),
                             (2.into(), Kind::bytes()),
@@ -598,7 +599,7 @@ mod tests {
                     path: owned_value_path!("b"),
                     kind: Kind::bytes(),
                     expected: Kind::object(
-                        Collection::from(BTreeMap::from([("b".into(), Kind::bytes())]))
+                        Collection::from(IndexMap::from([("b".into(), Kind::bytes())]))
                             .with_unknown(Kind::any()),
                     ),
                 },
@@ -610,10 +611,10 @@ mod tests {
                     path: owned_value_path!("x", 2),
                     kind: Kind::bytes(),
                     expected: Kind::object(
-                        Collection::from(BTreeMap::from([(
+                        Collection::from(IndexMap::from([(
                             "x".into(),
                             Kind::array(
-                                Collection::from(BTreeMap::from([
+                                Collection::from(IndexMap::from([
                                     (0.into(), Kind::any().without_undefined()),
                                     (1.into(), Kind::any().without_undefined()),
                                     (2.into(), Kind::bytes()),
@@ -632,10 +633,10 @@ mod tests {
                     path: owned_value_path!(0, 0),
                     kind: Kind::bytes(),
                     expected: Kind::array(
-                        Collection::from(BTreeMap::from([(
+                        Collection::from(IndexMap::from([(
                             0.into(),
                             Kind::array(
-                                Collection::from(BTreeMap::from([(0.into(), Kind::bytes())]))
+                                Collection::from(IndexMap::from([(0.into(), Kind::bytes())]))
                                     .with_unknown(Kind::any()),
                             ),
                         )]))

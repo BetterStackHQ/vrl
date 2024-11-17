@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 use vrl::{
     compiler::{state::RuntimeState, Context, TargetValue, TimeZone},
     value,
@@ -21,7 +21,7 @@ fn main() {
         // the value starts as just an object with a single field "x" set to 1
         value: value!({x: 1}),
         // the metadata is empty
-        metadata: Value::Object(BTreeMap::new()),
+        metadata: Value::Object(IndexMap::new()),
         // and there are no secrets associated with the target
         secrets: Secrets::default(),
     };

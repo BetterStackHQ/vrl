@@ -2,7 +2,7 @@ use crate::compiler::prelude::*;
 use chrono::{offset::TimeZone, Utc};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 fn parse_glog(bytes: Value) -> Resolved {
     let bytes = bytes.try_bytes()?;
@@ -128,8 +128,8 @@ impl FunctionExpression for ParseGlogFn {
     }
 }
 
-fn inner_kind() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn inner_kind() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         ("level".into(), Kind::bytes()),
         ("timestamp".into(), Kind::timestamp()),
         ("id".into(), Kind::integer()),

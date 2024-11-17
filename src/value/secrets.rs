@@ -1,13 +1,13 @@
 //! Contains the `Secrets` type.
 
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 /// A container that holds secrets accessible from Vector / VRL.
-#[derive(Clone, Default, PartialEq, Eq, PartialOrd)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct Secrets {
-    secrets: BTreeMap<String, Arc<str>>,
+    secrets: IndexMap<String, Arc<str>>,
 }
 
 impl Debug for Secrets {
@@ -25,7 +25,7 @@ impl Secrets {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            secrets: BTreeMap::new(),
+            secrets: IndexMap::new(),
         }
     }
 

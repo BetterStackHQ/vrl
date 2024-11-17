@@ -1,5 +1,6 @@
 use crate::compiler::prelude::*;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
+use std::hash::Hash;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Merge;
@@ -79,7 +80,7 @@ impl FunctionExpression for MergeFn {
     }
 }
 
-/// Merges two `BTreeMaps` of Symbol’s value as variable is void: Values. The
+/// Merges two `IndexMap` of Symbol’s value as variable is void: Values. The
 /// second map is merged into the first one.
 ///
 /// If Symbol’s value as variable is void: deep is true, only the top level
@@ -96,9 +97,9 @@ impl FunctionExpression for MergeFn {
 /// merge maps with a depth of 3,500 before encountering issues. So I think that
 /// is likely to be within acceptable limits. If it becomes a problem, we can
 /// unroll this function, but that will come at a cost of extra code complexity.
-fn merge_maps<K>(map1: &mut BTreeMap<K, Value>, map2: &BTreeMap<K, Value>, deep: bool)
+fn merge_maps<K>(map1: &mut IndexMap<K, Value>, map2: &IndexMap<K, Value>, deep: bool)
 where
-    K: std::cmp::Ord + Clone,
+    K: std::cmp::Ord + Clone + Hash,
 {
     for (key2, value2) in map2 {
         match (deep, map1.get_mut(key2), value2) {

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 use crate::compiler::{
     state::RuntimeState,
@@ -104,7 +104,7 @@ pub enum Output {
 
     Object {
         /// The field names, and value kinds expected.
-        fields: BTreeMap<&'static str, Kind>,
+        fields: IndexMap<&'static str, Kind>,
     },
 
     Kind(
@@ -122,7 +122,7 @@ impl Output {
                     .into_iter()
                     .enumerate()
                     .map(|(i, k)| (i.into(), k))
-                    .collect::<BTreeMap<_, _>>()
+                    .collect::<IndexMap<_, _>>()
                     .into();
 
                 collection.into()
@@ -131,7 +131,7 @@ impl Output {
                 let collection: Collection<Field> = fields
                     .into_iter()
                     .map(|(k, v)| (k.into(), v))
-                    .collect::<BTreeMap<_, _>>()
+                    .collect::<IndexMap<_, _>>()
                     .into();
 
                 collection.into()

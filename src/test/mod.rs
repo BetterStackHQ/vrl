@@ -3,7 +3,8 @@
 #![allow(clippy::print_stderr)] // tests
 
 use std::path::{PathBuf, MAIN_SEPARATOR};
-use std::{collections::BTreeMap, env, str::FromStr, time::Instant};
+use std::{env, str::FromStr, time::Instant};
+use indexmap::IndexMap;
 
 use ansi_term::Colour;
 use chrono::{DateTime, SecondsFormat, Utc};
@@ -407,7 +408,7 @@ fn run_vrl(
     timezone: TimeZone,
     vrl_runtime: VrlRuntime,
 ) -> Result<Value, Terminate> {
-    let mut metadata = Value::from(BTreeMap::new());
+    let mut metadata = Value::from(IndexMap::new());
     let mut target = TargetValueRef {
         value: test_object,
         metadata: &mut metadata,

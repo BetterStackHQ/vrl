@@ -167,11 +167,11 @@ mod tests {
     use crate::compiler::TimeZone;
     use crate::value;
     use regex::Regex;
-    use std::collections::BTreeMap;
+    use indexmap::IndexMap;
 
     #[test]
     fn out_of_range_integer() {
-        let mut object: Value = BTreeMap::new().into();
+        let mut object: Value = IndexMap::new().into();
         let mut runtime_state = state::RuntimeState::default();
         let tz = TimeZone::default();
         let mut ctx = Context::new(&mut object, &mut runtime_state, &tz);

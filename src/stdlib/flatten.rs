@@ -1,4 +1,4 @@
-use std::collections::btree_map;
+use indexmap::map::Iter as IndexMapIter;
 
 use crate::compiler::prelude::*;
 
@@ -108,14 +108,14 @@ impl FunctionExpression for FlattenFn {
 
 /// An iterator to walk over maps allowing us to flatten nested maps to a single level.
 struct MapFlatten<'a> {
-    values: btree_map::Iter<'a, KeyString, Value>,
+    values: IndexMapIter<'a, KeyString, Value>,
     separator: &'a str,
     inner: Option<Box<MapFlatten<'a>>>,
     parent: Option<KeyString>,
 }
 
 impl<'a> MapFlatten<'a> {
-    fn new(values: btree_map::Iter<'a, KeyString, Value>, separator: &'a str) -> Self {
+    fn new(values: IndexMapIter<'a, KeyString, Value>, separator: &'a str) -> Self {
         Self {
             values,
             separator,
@@ -126,7 +126,7 @@ impl<'a> MapFlatten<'a> {
 
     fn new_from_parent(
         parent: KeyString,
-        values: btree_map::Iter<'a, KeyString, Value>,
+        values: IndexMapIter<'a, KeyString, Value>,
         separator: &'a str,
     ) -> Self {
         Self {

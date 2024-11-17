@@ -2,6 +2,7 @@
 
 use crate::path::{BorrowedSegment, ValuePath};
 use crate::value::Kind;
+use crate::value::kind::collection::{Field, Index};
 use std::borrow::Cow;
 
 impl Kind {
@@ -31,7 +32,7 @@ impl Kind {
         self.as_object().map_or_else(Self::undefined, |object| {
             let mut kind = object
                 .known()
-                .get(&field.into_owned().into())
+                .get::<Field>(&field.into_owned().into())
                 .cloned()
                 .unwrap_or_else(|| object.unknown_kind());
 
@@ -104,7 +105,7 @@ impl Kind {
                     let index = index as usize;
                     let mut kind = array
                         .known()
-                        .get(&index.into())
+                        .get::<Index>(&index.into())
                         .cloned()
                         .unwrap_or_else(|| array.unknown_kind());
 
@@ -129,7 +130,7 @@ impl Kind {
 mod tests {
     use crate::owned_value_path;
     use crate::path::OwnedValuePath;
-    use std::collections::BTreeMap;
+    use indexmap::IndexMap;
 
     use super::*;
     use crate::value::kind::Collection;
@@ -162,7 +163,7 @@ mod tests {
             (
                 "get field from object",
                 TestCase {
-                    kind: Kind::object(BTreeMap::from([("a".into(), Kind::integer())])),
+                    kind: Kind::object(IndexMap::from([("a".into(), Kind::integer())])),
                     path: owned_value_path!("a"),
                     want: Kind::integer(),
                 },
@@ -170,7 +171,7 @@ mod tests {
             (
                 "get field from maybe an object",
                 TestCase {
-                    kind: Kind::object(BTreeMap::from([("a".into(), Kind::integer())])).or_null(),
+                    kind: Kind::object(IndexMap::from([("a".into(), Kind::integer())])).or_null(),
                     path: owned_value_path!("a"),
                     want: Kind::integer().or_undefined(),
                 },
@@ -178,7 +179,7 @@ mod tests {
             (
                 "get unknown from object with no unknown",
                 TestCase {
-                    kind: Kind::object(BTreeMap::from([("a".into(), Kind::integer())])),
+                    kind: Kind::object(IndexMap::from([("a".into(), Kind::integer())])),
                     path: owned_value_path!("b"),
                     want: Kind::undefined(),
                 },
@@ -187,7 +188,7 @@ mod tests {
                 "get unknown from object with unknown",
                 TestCase {
                     kind: Kind::object(
-                        Collection::from(BTreeMap::from([("a".into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([("a".into(), Kind::integer())]))
                             .with_unknown(Kind::bytes()),
                     ),
                     path: owned_value_path!("b"),
@@ -198,7 +199,7 @@ mod tests {
                 "get unknown from object with null unknown",
                 TestCase {
                     kind: Kind::object(
-                        Collection::from(BTreeMap::from([("a".into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([("a".into(), Kind::integer())]))
                             .with_unknown(Kind::null()),
                     ),
                     path: owned_value_path!("b"),
@@ -209,10 +210,10 @@ mod tests {
                 "get nested field",
                 TestCase {
                     kind: Kind::object(
-                        Collection::from(BTreeMap::from([(
+                        Collection::from(IndexMap::from([(
                             "a".into(),
                             Kind::object(
-                                Collection::from(BTreeMap::from([("b".into(), Kind::integer())]))
+                                Collection::from(IndexMap::from([("b".into(), Kind::integer())]))
                                     .with_unknown(Kind::null()),
                             ),
                         )]))
@@ -233,7 +234,7 @@ mod tests {
             (
                 "get index from array",
                 TestCase {
-                    kind: Kind::array(BTreeMap::from([(0.into(), Kind::integer())])),
+                    kind: Kind::array(IndexMap::from([(0.into(), Kind::integer())])),
                     path: owned_value_path!(0),
                     want: Kind::integer(),
                 },
@@ -241,7 +242,7 @@ mod tests {
             (
                 "get index from maybe array",
                 TestCase {
-                    kind: Kind::array(BTreeMap::from([(0.into(), Kind::integer())])).or_bytes(),
+                    kind: Kind::array(IndexMap::from([(0.into(), Kind::integer())])).or_bytes(),
                     path: owned_value_path!(0),
                     want: Kind::integer().or_undefined(),
                 },
@@ -249,7 +250,7 @@ mod tests {
             (
                 "get unknown from array with no unknown",
                 TestCase {
-                    kind: Kind::array(BTreeMap::from([(0.into(), Kind::integer())])),
+                    kind: Kind::array(IndexMap::from([(0.into(), Kind::integer())])),
                     path: owned_value_path!(1),
                     want: Kind::undefined(),
                 },
@@ -258,7 +259,7 @@ mod tests {
                 "get unknown from array with unknown",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([(0.into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([(0.into(), Kind::integer())]))
                             .with_unknown(Kind::bytes()),
                     ),
                     path: owned_value_path!(1),
@@ -269,7 +270,7 @@ mod tests {
                 "get unknown from array with null unknown",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([(0.into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([(0.into(), Kind::integer())]))
                             .with_unknown(Kind::null()),
                     ),
                     path: owned_value_path!(1),
@@ -280,10 +281,10 @@ mod tests {
                 "get nested index",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([(
+                        Collection::from(IndexMap::from([(
                             0.into(),
                             Kind::array(
-                                Collection::from(BTreeMap::from([(0.into(), Kind::integer())]))
+                                Collection::from(IndexMap::from([(0.into(), Kind::integer())]))
                                     .with_unknown(Kind::null()),
                             ),
                         )]))
@@ -296,7 +297,7 @@ mod tests {
             (
                 "out of bounds negative index",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([(
+                    kind: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::integer(),
                     )]))),
@@ -307,7 +308,7 @@ mod tests {
             (
                 "negative index no unknown",
                 TestCase {
-                    kind: Kind::array(Collection::from(BTreeMap::from([(
+                    kind: Kind::array(Collection::from(IndexMap::from([(
                         0.into(),
                         Kind::integer(),
                     )]))),
@@ -319,7 +320,7 @@ mod tests {
                 "negative index with unknown can't underflow",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::integer()),
                             (1.into(), Kind::bytes()),
                             (2.into(), Kind::float()),
@@ -334,7 +335,7 @@ mod tests {
                 "negative index with unknown can't underflow (maybe array)",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([
+                        Collection::from(IndexMap::from([
                             (0.into(), Kind::integer()),
                             (1.into(), Kind::bytes()),
                             (2.into(), Kind::float()),
@@ -350,7 +351,7 @@ mod tests {
                 "negative index with unknown can underflow",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([(0.into(), Kind::integer())]))
+                        Collection::from(IndexMap::from([(0.into(), Kind::integer())]))
                             .with_unknown(Kind::boolean()),
                     ),
                     path: owned_value_path!(-2),
@@ -361,8 +362,8 @@ mod tests {
                 "negative index nested",
                 TestCase {
                     kind: Kind::array(
-                        Collection::from(BTreeMap::from([(0.into(), Kind::integer())]))
-                            .with_unknown(Kind::object(BTreeMap::from([(
+                        Collection::from(IndexMap::from([(0.into(), Kind::integer())]))
+                            .with_unknown(Kind::object(IndexMap::from([(
                                 "foo".into(),
                                 Kind::bytes(),
                             )]))),

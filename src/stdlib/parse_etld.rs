@@ -2,7 +2,8 @@ use psl::Psl;
 use publicsuffix::List;
 
 use crate::compiler::prelude::*;
-use std::{collections::BTreeMap, path::Path};
+use std::path::Path;
+use indexmap::IndexMap;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ParseEtld;
@@ -161,7 +162,7 @@ impl FunctionExpression for ParseEtldFn {
             .collect::<Vec<_>>()
             .join(".");
 
-        let mut map = BTreeMap::<&str, Value>::new();
+        let mut map = IndexMap::<&str, Value>::new();
 
         map.insert("etld", etld_string.to_owned().into());
         map.insert("etld_plus", etld_plus.into());
@@ -178,8 +179,8 @@ impl FunctionExpression for ParseEtldFn {
     }
 }
 
-fn inner_kind() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn inner_kind() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         ("etld".into(), Kind::bytes()),
         ("etld_plus".into(), Kind::bytes()),
         ("known_suffix".into(), Kind::boolean()),

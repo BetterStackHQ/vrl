@@ -1,4 +1,5 @@
 use crate::value::{KeyString, ObjectMap};
+use indexmap::IndexMap;
 
 /// Rounds the given number to the given precision.
 /// Takes a function parameter so the exact rounding function (ceil, floor or round)
@@ -13,7 +14,7 @@ where
 }
 
 /// Takes a set of captures that have resulted from matching a regular expression
-/// against some text and fills a `BTreeMap` with the result.
+/// against some text and fills a `IndexMap` with the result.
 ///
 /// All captures are inserted with a key as the numeric index of that capture
 /// "0" is the overall match.
@@ -46,10 +47,10 @@ pub(crate) fn capture_regex_to_map(
 
 pub(crate) fn regex_kind(
     regex: &regex::Regex,
-) -> std::collections::BTreeMap<crate::value::kind::Field, crate::value::kind::Kind> {
+) -> IndexMap<crate::value::kind::Field, crate::value::kind::Kind> {
     use crate::value::kind::Kind;
 
-    let mut inner_type = std::collections::BTreeMap::new();
+    let mut inner_type = IndexMap::new();
 
     // Add typedefs for each capture by numerical index.
     for num in 0..regex.captures_len() {

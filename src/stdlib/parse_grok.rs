@@ -6,13 +6,14 @@ mod non_wasm {
     use crate::diagnostic::{Label, Span};
     use crate::value::Value;
     pub(super) use std::sync::Arc;
-    use std::{collections::BTreeMap, fmt};
+    use std::fmt;
+    use indexmap::IndexMap;
 
     fn parse_grok(value: Value, pattern: Arc<grok::Pattern>) -> Resolved {
         let bytes = value.try_bytes_utf8_lossy()?;
         match pattern.match_against(&bytes) {
             Some(matches) => {
-                let mut result = BTreeMap::new();
+                let mut result = IndexMap::new();
 
                 for (name, value) in &matches {
                     result.insert(name.to_string().into(), Value::from(value));

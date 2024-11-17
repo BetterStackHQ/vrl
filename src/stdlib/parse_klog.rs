@@ -2,7 +2,7 @@ use crate::compiler::prelude::*;
 use chrono::{offset::TimeZone, Datelike, Utc};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 fn parse_klog(bytes: Value) -> Resolved {
     let bytes = bytes.try_bytes()?;
@@ -139,8 +139,8 @@ fn resolve_year(month: Option<&str>) -> i32 {
     }
 }
 
-fn inner_kind() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn inner_kind() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         ("level".into(), Kind::bytes()),
         ("timestamp".into(), Kind::timestamp()),
         ("id".into(), Kind::integer()),

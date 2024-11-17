@@ -3,7 +3,8 @@ mod field;
 mod index;
 mod unknown;
 
-use std::collections::BTreeMap;
+use std::hash::Hash;
+use indexmap::IndexMap;
 
 use crate::path::OwnedSegment;
 use crate::path::OwnedValuePath;
@@ -21,9 +22,9 @@ pub trait CollectionKey {
 ///
 /// A collection contains one or more kinds for known positions within the collection (e.g. indices
 /// or fields), and contains a global "unknown" state that applies to all unknown paths.
-#[derive(Debug, Clone, Eq, PartialEq, PartialOrd)]
-pub struct Collection<T: Ord> {
-    known: BTreeMap<T, Kind>,
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Collection<T: Ord + Hash> {
+    known: IndexMap<T, Kind>,
 
     /// The kind of other unknown fields.
     ///
@@ -33,10 +34,10 @@ pub struct Collection<T: Ord> {
     unknown: Unknown,
 }
 
-impl<T: Ord + Clone> Collection<T> {
+impl<T: Ord + Clone + Hash> Collection<T> {
     /// Create a new collection from its parts.
     #[must_use]
-    pub fn from_parts(known: BTreeMap<T, Kind>, unknown: impl Into<Kind>) -> Self {
+    pub fn from_parts(known: IndexMap<T, Kind>, unknown: impl Into<Kind>) -> Self {
         Self {
             known,
             unknown: unknown.into().into(),
@@ -59,7 +60,7 @@ impl<T: Ord + Clone> Collection<T> {
     #[must_use]
     pub fn from_unknown(unknown: impl Into<Kind>) -> Self {
         Self {
-            known: BTreeMap::default(),
+            known: IndexMap::default(),
             unknown: unknown.into().into(),
         }
     }
@@ -68,7 +69,7 @@ impl<T: Ord + Clone> Collection<T> {
     #[must_use]
     pub fn empty() -> Self {
         Self {
-            known: BTreeMap::default(),
+            known: IndexMap::default(),
             unknown: Kind::undefined().into(),
         }
     }
@@ -77,7 +78,7 @@ impl<T: Ord + Clone> Collection<T> {
     #[must_use]
     pub fn any() -> Self {
         Self {
-            known: BTreeMap::default(),
+            known: IndexMap::default(),
             unknown: Unknown::any(),
         }
     }
@@ -86,7 +87,7 @@ impl<T: Ord + Clone> Collection<T> {
     #[must_use]
     pub fn json() -> Self {
         Self {
-            known: BTreeMap::default(),
+            known: IndexMap::default(),
             unknown: Unknown::json(),
         }
     }
@@ -101,13 +102,13 @@ impl<T: Ord + Clone> Collection<T> {
 
     /// Get a reference to the "known" elements in the collection.
     #[must_use]
-    pub fn known(&self) -> &BTreeMap<T, Kind> {
+    pub fn known(&self) -> &IndexMap<T, Kind> {
         &self.known
     }
 
     /// Get a mutable reference to the "known" elements in the collection.
     #[must_use]
-    pub fn known_mut(&mut self) -> &mut BTreeMap<T, Kind> {
+    pub fn known_mut(&mut self) -> &mut IndexMap<T, Kind> {
         &mut self.known
     }
 
@@ -257,7 +258,7 @@ impl<T: Ord + Clone> Collection<T> {
     }
 }
 
-impl<T: Ord + Clone + CollectionKey> Collection<T> {
+impl<T: Ord + Clone + CollectionKey + Hash> Collection<T> {
     /// Check if `self` is a superset of `other`.
     ///
     /// Meaning, for all known fields in `other`, if the field also exists in `self`, then its type
@@ -328,8 +329,8 @@ pub enum EmptyState {
     Never,
 }
 
-impl<T: Ord> From<BTreeMap<T, Kind>> for Collection<T> {
-    fn from(known: BTreeMap<T, Kind>) -> Self {
+impl<T: Ord + Hash> From<IndexMap<T, Kind>> for Collection<T> {
+    fn from(known: IndexMap<T, Kind>) -> Self {
         Self {
             known,
             unknown: Kind::undefined().into(),
@@ -390,7 +391,7 @@ impl std::fmt::Display for Collection<Index> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use indexmap::IndexMap;
 
     use super::*;
 
@@ -446,11 +447,11 @@ mod tests {
                 "other-known match",
                 TestCase {
                     this: Collection::from_parts(
-                        BTreeMap::from([("bar", Kind::bytes())]),
+                        IndexMap::from([("bar", Kind::bytes())]),
                         Kind::regex().or_null(),
                     ),
                     other: Collection::from_parts(
-                        BTreeMap::from([("foo", Kind::regex()), ("bar", Kind::bytes())]),
+                        IndexMap::from([("foo", Kind::regex()), ("bar", Kind::bytes())]),
                         Kind::regex(),
                     ),
                     want: true,
@@ -460,11 +461,11 @@ mod tests {
                 "other-known mis-match",
                 TestCase {
                     this: Collection::from_parts(
-                        BTreeMap::from([("foo", Kind::integer()), ("bar", Kind::bytes())]),
+                        IndexMap::from([("foo", Kind::integer()), ("bar", Kind::bytes())]),
                         Kind::regex().or_null(),
                     ),
                     other: Collection::from_parts(
-                        BTreeMap::from([("foo", Kind::regex()), ("bar", Kind::bytes())]),
+                        IndexMap::from([("foo", Kind::regex()), ("bar", Kind::bytes())]),
                         Kind::regex(),
                     ),
                     want: false,
@@ -474,7 +475,7 @@ mod tests {
                 "self-known match",
                 TestCase {
                     this: Collection::from_parts(
-                        BTreeMap::from([
+                        IndexMap::from([
                             ("foo", Kind::bytes().or_integer()),
                             ("bar", Kind::bytes().or_integer()),
                         ]),
@@ -488,7 +489,7 @@ mod tests {
                 "self-known mis-match",
                 TestCase {
                     this: Collection::from_parts(
-                        BTreeMap::from([("foo", Kind::integer()), ("bar", Kind::bytes())]),
+                        IndexMap::from([("foo", Kind::integer()), ("bar", Kind::bytes())]),
                         Kind::bytes().or_integer(),
                     ),
                     other: Collection::from_unknown(Kind::bytes().or_integer()),
@@ -498,7 +499,7 @@ mod tests {
             (
                 "unknown superset of known",
                 TestCase {
-                    this: Collection::from_parts(BTreeMap::new(), Kind::bytes().or_integer()),
+                    this: Collection::from_parts(IndexMap::new(), Kind::bytes().or_integer()),
                     other: Collection::empty()
                         .with_known("foo", Kind::integer())
                         .with_known("bar", Kind::bytes()),
@@ -508,7 +509,7 @@ mod tests {
             (
                 "unknown not superset of known",
                 TestCase {
-                    this: Collection::from_parts(BTreeMap::new(), Kind::bytes().or_integer()),
+                    this: Collection::from_parts(IndexMap::new(), Kind::bytes().or_integer()),
                     other: Collection::empty().with_known("foo", Kind::float()),
                     want: false,
                 },
@@ -594,28 +595,28 @@ mod tests {
             (
                 "merge same knowns (deep)",
                 TestCase {
-                    this: Collection::from(BTreeMap::from([("foo", Kind::integer())])),
-                    other: Collection::from(BTreeMap::from([("foo", Kind::bytes())])),
+                    this: Collection::from(IndexMap::from([("foo", Kind::integer())])),
+                    other: Collection::from(IndexMap::from([("foo", Kind::bytes())])),
                     overwrite: false,
-                    want: Collection::from(BTreeMap::from([("foo", Kind::integer().or_bytes())])),
+                    want: Collection::from(IndexMap::from([("foo", Kind::integer().or_bytes())])),
                 },
             ),
             (
                 "merge same knowns (shallow)",
                 TestCase {
-                    this: Collection::from(BTreeMap::from([("foo", Kind::integer())])),
-                    other: Collection::from(BTreeMap::from([("foo", Kind::bytes())])),
+                    this: Collection::from(IndexMap::from([("foo", Kind::integer())])),
+                    other: Collection::from(IndexMap::from([("foo", Kind::bytes())])),
                     overwrite: true,
-                    want: Collection::from(BTreeMap::from([("foo", Kind::bytes())])),
+                    want: Collection::from(IndexMap::from([("foo", Kind::bytes())])),
                 },
             ),
             (
                 "append different knowns (deep)",
                 TestCase {
-                    this: Collection::from(BTreeMap::from([("foo", Kind::integer())])),
-                    other: Collection::from(BTreeMap::from([("bar", Kind::bytes())])),
+                    this: Collection::from(IndexMap::from([("foo", Kind::integer())])),
+                    other: Collection::from(IndexMap::from([("bar", Kind::bytes())])),
                     overwrite: false,
-                    want: Collection::from(BTreeMap::from([
+                    want: Collection::from(IndexMap::from([
                         ("foo", Kind::integer().or_undefined()),
                         ("bar", Kind::bytes().or_undefined()),
                     ])),
@@ -624,10 +625,10 @@ mod tests {
             (
                 "append different knowns (shallow)",
                 TestCase {
-                    this: Collection::from(BTreeMap::from([("foo", Kind::integer())])),
-                    other: Collection::from(BTreeMap::from([("bar", Kind::bytes())])),
+                    this: Collection::from(IndexMap::from([("foo", Kind::integer())])),
+                    other: Collection::from(IndexMap::from([("bar", Kind::bytes())])),
                     overwrite: true,
-                    want: Collection::from(BTreeMap::from([
+                    want: Collection::from(IndexMap::from([
                         ("foo", Kind::integer()),
                         ("bar", Kind::bytes()),
                     ])),
@@ -636,13 +637,13 @@ mod tests {
             (
                 "merge/append same/different knowns (deep)",
                 TestCase {
-                    this: Collection::from(BTreeMap::from([("foo", Kind::integer())])),
-                    other: Collection::from(BTreeMap::from([
+                    this: Collection::from(IndexMap::from([("foo", Kind::integer())])),
+                    other: Collection::from(IndexMap::from([
                         ("foo", Kind::bytes()),
                         ("bar", Kind::boolean()),
                     ])),
                     overwrite: false,
-                    want: Collection::from(BTreeMap::from([
+                    want: Collection::from(IndexMap::from([
                         ("foo", Kind::integer().or_bytes()),
                         ("bar", Kind::boolean().or_undefined()),
                     ])),
@@ -651,13 +652,13 @@ mod tests {
             (
                 "merge/append same/different knowns (shallow)",
                 TestCase {
-                    this: Collection::from(BTreeMap::from([("foo", Kind::integer())])),
-                    other: Collection::from(BTreeMap::from([
+                    this: Collection::from(IndexMap::from([("foo", Kind::integer())])),
+                    other: Collection::from(IndexMap::from([
                         ("foo", Kind::bytes()),
                         ("bar", Kind::boolean()),
                     ])),
                     overwrite: true,
-                    want: Collection::from(BTreeMap::from([
+                    want: Collection::from(IndexMap::from([
                         ("foo", Kind::bytes()),
                         ("bar", Kind::boolean()),
                     ])),
@@ -684,10 +685,10 @@ mod tests {
             (
                 "merge known with specific unknown",
                 TestCase {
-                    this: Collection::from(BTreeMap::from([("a", Kind::integer())])),
+                    this: Collection::from(IndexMap::from([("a", Kind::integer())])),
                     other: Collection::from_unknown(Kind::float()),
                     overwrite: true,
-                    want: Collection::from(BTreeMap::from([("a", Kind::integer().or_float())]))
+                    want: Collection::from(IndexMap::from([("a", Kind::integer().or_float())]))
                         .with_unknown(Kind::float().or_undefined()),
                 },
             ),
@@ -723,7 +724,7 @@ mod tests {
             (
                 "integer known / no unknown",
                 TestCase {
-                    this: Collection::from(BTreeMap::from([("foo", Kind::integer())])),
+                    this: Collection::from(IndexMap::from([("foo", Kind::integer())])),
                     want: Collection::from_unknown(Kind::integer().or_undefined()),
                 },
             ),
@@ -731,7 +732,7 @@ mod tests {
                 "integer known / any unknown",
                 TestCase {
                     this: {
-                        let mut v = Collection::from(BTreeMap::from([("foo", Kind::integer())]));
+                        let mut v = Collection::from(IndexMap::from([("foo", Kind::integer())]));
                         v.set_unknown(Kind::any());
                         v
                     },
@@ -742,7 +743,7 @@ mod tests {
                 "integer known / byte unknown",
                 TestCase {
                     this: {
-                        let mut v = Collection::from(BTreeMap::from([("foo", Kind::integer())]));
+                        let mut v = Collection::from(IndexMap::from([("foo", Kind::integer())]));
                         v.set_unknown(Kind::bytes());
                         v
                     },
@@ -753,24 +754,24 @@ mod tests {
                 "boolean/array known / byte/object unknown",
                 TestCase {
                     this: {
-                        let mut v = Collection::from(BTreeMap::from([
+                        let mut v = Collection::from(IndexMap::from([
                             ("foo", Kind::boolean()),
                             (
                                 "bar",
-                                Kind::array(BTreeMap::from([(0.into(), Kind::timestamp())])),
+                                Kind::array(IndexMap::from([(0.into(), Kind::timestamp())])),
                             ),
                         ]));
                         v.set_unknown(
                             Kind::bytes()
-                                .or_object(BTreeMap::from([("baz".into(), Kind::regex())])),
+                                .or_object(IndexMap::from([("baz".into(), Kind::regex())])),
                         );
                         v
                     },
                     want: Collection::from_unknown(
                         Kind::boolean()
-                            .or_array(BTreeMap::from([(0.into(), Kind::timestamp())]))
+                            .or_array(IndexMap::from([(0.into(), Kind::timestamp())]))
                             .or_bytes()
-                            .or_object(BTreeMap::from([("baz".into(), Kind::regex())]))
+                            .or_object(IndexMap::from([("baz".into(), Kind::regex())]))
                             .or_undefined(),
                     ),
                 },
@@ -807,14 +808,14 @@ mod tests {
             (
                 "known single",
                 TestCase {
-                    this: BTreeMap::from([("foo".into(), Kind::null())]).into(),
+                    this: IndexMap::from([("foo".into(), Kind::null())]).into(),
                     want: "{ foo: null }",
                 },
             ),
             (
                 "known multiple",
                 TestCase {
-                    this: BTreeMap::from([
+                    this: IndexMap::from([
                         ("1".into(), Kind::null()),
                         ("2".into(), Kind::boolean()),
                     ])
@@ -825,11 +826,11 @@ mod tests {
             (
                 "known multiple, nested",
                 TestCase {
-                    this: BTreeMap::from([
+                    this: IndexMap::from([
                         ("1".into(), Kind::null()),
                         (
                             "2".into(),
-                            Kind::object(BTreeMap::from([("3".into(), Kind::integer())])),
+                            Kind::object(IndexMap::from([("3".into(), Kind::integer())])),
                         ),
                     ])
                     .into(),
@@ -866,14 +867,14 @@ mod tests {
             (
                 "known single",
                 TestCase {
-                    this: BTreeMap::from([(0.into(), Kind::null())]).into(),
+                    this: IndexMap::from([(0.into(), Kind::null())]).into(),
                     want: "[null]",
                 },
             ),
             (
                 "known multiple",
                 TestCase {
-                    this: BTreeMap::from([(0.into(), Kind::null()), (1.into(), Kind::boolean())])
+                    this: IndexMap::from([(0.into(), Kind::null()), (1.into(), Kind::boolean())])
                         .into(),
                     want: "[null, boolean]",
                 },
@@ -881,11 +882,11 @@ mod tests {
             (
                 "known multiple, nested",
                 TestCase {
-                    this: BTreeMap::from([
+                    this: IndexMap::from([
                         (0.into(), Kind::null()),
                         (
                             1.into(),
-                            Kind::object(BTreeMap::from([("0".into(), Kind::integer())])),
+                            Kind::object(IndexMap::from([("0".into(), Kind::integer())])),
                         ),
                     ])
                     .into(),
@@ -916,14 +917,14 @@ mod tests {
             (
                 "known bytes",
                 TestCase {
-                    this: BTreeMap::from([("foo", Kind::bytes())]).into(),
+                    this: IndexMap::from([("foo", Kind::bytes())]).into(),
                     want: Kind::bytes(),
                 },
             ),
             (
                 "multiple known",
                 TestCase {
-                    this: BTreeMap::from([("foo", Kind::bytes()), ("bar", Kind::boolean())]).into(),
+                    this: IndexMap::from([("foo", Kind::bytes()), ("bar", Kind::boolean())]).into(),
                     want: Kind::bytes().or_boolean(),
                 },
             ),
@@ -931,7 +932,7 @@ mod tests {
                 "known bytes, unknown any",
                 TestCase {
                     this: Collection::from_parts(
-                        BTreeMap::from([("foo", Kind::bytes())]),
+                        IndexMap::from([("foo", Kind::bytes())]),
                         Kind::any(),
                     ),
                     want: Kind::any().without_undefined(),
@@ -941,7 +942,7 @@ mod tests {
                 "known bytes, unknown timestamp",
                 TestCase {
                     this: Collection::from_parts(
-                        BTreeMap::from([("foo", Kind::bytes())]),
+                        IndexMap::from([("foo", Kind::bytes())]),
                         Kind::timestamp(),
                     ),
                     want: Kind::bytes().or_timestamp(),

@@ -2,7 +2,7 @@ use std::str::FromStr;
 use super::ast::*;
 use super::template_string::TemplateString;
 use super::lex::*;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 use lalrpop_util::ErrorRecovery;
 use ordered_float::NotNan;
 use crate::diagnostic::span;
@@ -502,9 +502,9 @@ Array: Array = {
 
 #[inline]
 Object: Object = {
-    "{" NonterminalNewline* "}" => Object(BTreeMap::default()),
+    "{" NonterminalNewline* "}" => Object(IndexMap::default()),
     "{" NonterminalNewline* <CommaMultiline<(<Sp<ObjectKey>> ":" <ArithmeticExpr>)>> "}" => {
-        let object =<>.into_iter().collect::<BTreeMap<_, _>>();
+        let object =<>.into_iter().collect::<IndexMap<_, _>>();
         Object(object)
     },
 };

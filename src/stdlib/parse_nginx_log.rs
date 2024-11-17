@@ -1,7 +1,7 @@
 use crate::compiler::prelude::*;
 use crate::value;
 use regex::Regex;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
 
 use super::log_util;
 
@@ -159,8 +159,8 @@ impl FunctionExpression for ParseNginxLogFn {
     }
 }
 
-fn kind_combined() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn kind_combined() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         ("client".into(), Kind::bytes()),
         ("user".into(), Kind::bytes().or_null()),
         ("timestamp".into(), Kind::timestamp()),
@@ -173,8 +173,8 @@ fn kind_combined() -> BTreeMap<Field, Kind> {
     ])
 }
 
-fn kind_ingress_upstreaminfo() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn kind_ingress_upstreaminfo() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         ("remote_addr".into(), Kind::bytes().or_undefined()),
         ("remote_user".into(), Kind::bytes().or_undefined()),
         ("timestamp".into(), Kind::timestamp()),
@@ -198,8 +198,8 @@ fn kind_ingress_upstreaminfo() -> BTreeMap<Field, Kind> {
     ])
 }
 
-fn kind_error() -> BTreeMap<Field, Kind> {
-    BTreeMap::from([
+fn kind_error() -> IndexMap<Field, Kind> {
+    IndexMap::from([
         ("timestamp".into(), Kind::timestamp()),
         ("severity".into(), Kind::bytes()),
         ("pid".into(), Kind::integer()),

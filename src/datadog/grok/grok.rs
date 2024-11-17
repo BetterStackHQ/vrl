@@ -8,9 +8,10 @@
 
 include!(concat!(env!("OUT_DIR"), "/patterns.rs"));
 
-use std::collections::{btree_map, BTreeMap};
 use std::panic;
 use std::sync::Arc;
+use indexmap::IndexMap;
+use indexmap::map::Iter as IndexMapIter;
 
 use super::parse_grok::FatalError;
 
@@ -29,12 +30,12 @@ const DEFINITION_INDEX: usize = 4;
 #[derive(Debug)]
 pub struct Matches<'a> {
     captures: Captures<'a>,
-    names: &'a BTreeMap<String, usize>,
+    names: &'a IndexMap<String, usize>,
 }
 
 impl<'a> Matches<'a> {
     /// Instantiates the matches for a pattern after the match.
-    pub fn new(captures: Captures<'a>, names: &'a BTreeMap<String, usize>) -> Self {
+    pub fn new(captures: Captures<'a>, names: &'a IndexMap<String, usize>) -> Self {
         Matches { captures, names }
     }
 
@@ -51,7 +52,7 @@ impl<'a> Matches<'a> {
 
 pub struct MatchesIter<'a> {
     captures: &'a Captures<'a>,
-    names: btree_map::Iter<'a, String, usize>,
+    names: IndexMapIter<'a, String, usize>,
 }
 
 impl<'a> Iterator for MatchesIter<'a> {
@@ -81,16 +82,16 @@ pub struct Pattern {
     // entirely and have it be the responsibilty of the caller to provide for
     // Clone + Sync + Send.
     regex: Arc<Regex>,
-    names: BTreeMap<String, usize>,
+    names: IndexMap<String, usize>,
 }
 
 impl Pattern {
     /// Creates a new pattern from a raw regex string and an alias map to identify the
     /// fields properly.
-    fn new(regex: &str, alias: &BTreeMap<String, String>) -> Result<Self, Error> {
+    fn new(regex: &str, alias: &IndexMap<String, String>) -> Result<Self, Error> {
         match Regex::new(regex) {
             Ok(r) => Ok({
-                let mut names: BTreeMap<String, usize> = BTreeMap::new();
+                let mut names: IndexMap<String, usize> = IndexMap::new();
                 r.foreach_name(|cap_name, cap_idx| {
                     let name = match alias.iter().find(|&(_k, v)| *v == cap_name) {
                         Some(item) => item.0.clone(),
@@ -125,14 +126,14 @@ impl Pattern {
 /// The basic structure to manage patterns, entry point for common usage.
 #[derive(Debug)]
 pub struct Grok {
-    definitions: BTreeMap<String, String>,
+    definitions: IndexMap<String, String>,
 }
 
 impl Grok {
     /// Creates a new `Grok` instance and loads all the default patterns.
     pub fn with_patterns() -> Self {
         let mut grok = Grok {
-            definitions: BTreeMap::new(),
+            definitions: IndexMap::new(),
         };
         for &(key, value) in PATTERNS {
             grok.insert_definition(String::from(key), String::from(value));
@@ -148,7 +149,7 @@ impl Grok {
     /// Compiles the given pattern, making it ready for matching.
     pub fn compile(&mut self, pattern: &str, with_alias_only: bool) -> Result<Pattern, Error> {
         let mut named_regex = String::from(pattern);
-        let mut alias: BTreeMap<String, String> = BTreeMap::new();
+        let mut alias: IndexMap<String, String> = IndexMap::new();
 
         let mut index = 0;
         let mut iteration_left = MAX_RECURSION;

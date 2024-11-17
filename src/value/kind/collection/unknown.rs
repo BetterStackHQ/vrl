@@ -1,5 +1,6 @@
 use crate::path::OwnedValuePath;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
+use std::hash::Hash;
 
 use super::Collection;
 use crate::value::Kind;
@@ -15,10 +16,10 @@ use crate::value::Kind;
 /// "unknown" values can either be "undefined" or the "unknown" type.
 /// For example, an array with an infinite unknown of "integer" doesn't imply that _every_
 /// index contains an array. Rather, it says every index contains an "integer" or is "undefined".
-#[derive(Debug, Clone, Eq, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Unknown(pub(super) Inner);
 
-#[derive(Debug, Clone, Eq, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub(super) enum Inner {
     Exact(Box<Kind>),
 
@@ -344,10 +345,10 @@ impl From<Infinite> for Kind {
     }
 }
 
-impl<T: Ord> From<Infinite> for Collection<T> {
+impl<T: Ord + Hash> From<Infinite> for Collection<T> {
     fn from(infinite: Infinite) -> Self {
         Self {
-            known: BTreeMap::default(),
+            known: IndexMap::default(),
             unknown: Unknown::infinite(infinite),
         }
     }
@@ -355,7 +356,7 @@ impl<T: Ord> From<Infinite> for Collection<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use indexmap::IndexMap;
 
     use super::*;
 

@@ -1,4 +1,5 @@
-use std::{collections::BTreeMap, fmt, ops::Deref};
+use std::{fmt, ops::Deref};
+use indexmap::IndexMap;
 
 use crate::value::Value;
 use crate::{
@@ -73,7 +74,7 @@ impl Expression for Array {
             .into_iter()
             .enumerate()
             .map(|(index, type_def)| (index.into(), type_def.into()))
-            .collect::<BTreeMap<_, _>>();
+            .collect::<IndexMap<_, _>>();
 
         TypeInfo::new(
             state,
@@ -118,7 +119,7 @@ mod tests {
 
         scalar_array {
             expr: |_| expr!([1, "foo", true]),
-            want: TypeDef::array(BTreeMap::from([
+            want: TypeDef::array(IndexMap::from([
                 (0.into(), Kind::integer()),
                 (1.into(), Kind::bytes()),
                 (2.into(), Kind::boolean()),
@@ -127,13 +128,13 @@ mod tests {
 
         mixed_array {
             expr: |_| expr!([1, [true, "foo"], { "bar": null }]),
-            want: TypeDef::array(BTreeMap::from([
+            want: TypeDef::array(IndexMap::from([
                 (0.into(), Kind::integer()),
-                (1.into(), Kind::array(BTreeMap::from([
+                (1.into(), Kind::array(IndexMap::from([
                     (0.into(), Kind::boolean()),
                     (1.into(), Kind::bytes()),
                 ]))),
-                (2.into(), Kind::object(BTreeMap::from([
+                (2.into(), Kind::object(IndexMap::from([
                     ("bar".into(), Kind::null())
                 ]))),
             ])),

@@ -4,7 +4,7 @@ use crate::compiler::prelude::*;
 
 static DEFAULT_SEPARATOR: &str = ".";
 
-fn unflatten(value: Value, separator: Value, recursive: Value) -> Resolved {
+pub fn unflatten(value: Value, separator: Value, recursive: Value) -> Resolved {
     let separator = separator.try_bytes_utf8_lossy()?.into_owned();
     let recursive = recursive.try_boolean()?;
     let map = value.try_object()?;

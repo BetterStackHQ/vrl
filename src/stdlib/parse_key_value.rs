@@ -19,7 +19,7 @@ use std::{
 use indexmap::IndexMap;
 use indexmap::map::Entry;
 
-pub(crate) fn parse_key_value(
+pub fn parse_key_value(
     bytes: Value,
     key_value_delimiter: Value,
     field_delimiter: Value,
@@ -177,7 +177,7 @@ impl Function for ParseKeyValue {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Whitespace {
+pub enum Whitespace {
     Strict,
     Lenient,
 }

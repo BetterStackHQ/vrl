@@ -329,6 +329,8 @@ cfg_if::cfg_if! {
         pub use parse_int::ParseInt;
         pub use parse_json::ParseJson;
         pub use parse_key_value::ParseKeyValue;
+        pub use parse_key_value::parse_key_value;
+        pub use parse_key_value::Whitespace;
         pub use parse_klog::ParseKlog;
         pub use parse_linux_authorization::ParseLinuxAuthorization;
         pub use parse_logfmt::ParseLogFmt;
@@ -383,6 +385,7 @@ cfg_if::cfg_if! {
         pub use truncate::Truncate;
         pub use type_def::TypeDef;
         pub use unflatten::Unflatten;
+        pub use unflatten::unflatten;
         pub use unique::Unique;
         pub use unnest::Unnest;
         pub use upcase::Upcase;

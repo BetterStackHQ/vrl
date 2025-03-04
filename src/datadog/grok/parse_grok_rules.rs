@@ -1,12 +1,11 @@
+use crate::path::OwnedValuePath;
+use crate::value::{KeyString, Value};
+use std::sync::LazyLock;
 use std::{
     collections::HashMap,
     convert::TryFrom,
 };
 use indexmap::IndexMap;
-
-use crate::path::OwnedValuePath;
-use crate::value::{KeyString, Value};
-use once_cell::sync::Lazy;
 use tracing::error;
 
 use super::grok::Grok;
@@ -17,8 +16,9 @@ use super::{
     parse_grok_pattern::parse_grok_pattern,
 };
 
-static GROK_PATTERN_RE: Lazy<onig::Regex> =
-    Lazy::new(|| onig::Regex::new(r#"%\{(?:[^"\}]|(?<!\\)"(?:\\"|[^"])*(?<!\\)")+\}"#).unwrap());
+static GROK_PATTERN_RE: LazyLock<onig::Regex> = LazyLock::new(|| {
+    onig::Regex::new(r#"%\{(?:[^"\}]|(?<!\\)"(?:\\"|[^"])*(?<!\\)")+\}"#).unwrap()
+});
 
 /// The result of parsing a grok rule with a final regular expression and the
 /// related field information, needed at runtime.
@@ -367,7 +367,7 @@ fn resolves_match_function(
             Ok(())
         }
         "date" => {
-            return match match_fn.args.as_ref() {
+            match match_fn.args.as_ref() {
                 Some(args) if !args.is_empty() && args.len() <= 2 => {
                     if let ast::FunctionArgument::Arg(Value::Bytes(b)) = &args[0] {
                         let format = String::from_utf8_lossy(b);
@@ -419,7 +419,7 @@ fn resolves_match_function(
                     Err(Error::InvalidFunctionArguments(match_fn.name.clone()))
                 }
                 _ => Err(Error::InvalidFunctionArguments(match_fn.name.clone())),
-            };
+            }
         }
         // otherwise just add it as is, it should be a known grok pattern
         grok_pattern_name => {

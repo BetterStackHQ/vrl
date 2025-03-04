@@ -1,3 +1,4 @@
+#![allow(clippy::module_name_repetitions)]
 mod exact;
 mod field;
 mod index;
@@ -52,7 +53,7 @@ impl<T: Ord + Clone + Hash> Collection<T> {
         let unknown_kind = self.unknown_kind();
         output
             .known_mut()
-            .retain(|i, i_kind| *i_kind != unknown_kind);
+            .retain(|_, i_kind| *i_kind != unknown_kind);
         output
     }
 
@@ -203,7 +204,7 @@ impl<T: Ord + Clone + Hash> Collection<T> {
     /// - Both `Unknown`s are merged, similar to merging two `Kind`s.
     pub fn merge(&mut self, mut other: Self, overwrite: bool) {
         for (key, self_kind) in &mut self.known {
-            if let Some(other_kind) = other.known.remove(key) {
+            if let Some(other_kind) = other.known.shift_remove(key) {
                 if overwrite {
                     *self_kind = other_kind;
                 } else {

@@ -42,7 +42,7 @@ impl Secrets {
 
     /// Removes a secret
     pub fn remove(&mut self, key: &str) {
-        self.secrets.remove(key);
+        self.secrets.shift_remove(key);
     }
 
     /// Merged both together. If there are collisions, the value from `self` is kept.

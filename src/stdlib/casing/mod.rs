@@ -30,11 +30,11 @@ pub(crate) fn variants_msg() -> String {
         .join(", ")
 }
 
-pub(crate) fn into_case(s: String) -> Result<Case, Box<dyn DiagnosticMessage>> {
-    match s.as_ref() {
+pub(crate) fn into_case(s: &str) -> Result<Case, Box<dyn DiagnosticMessage>> {
+    match s {
         "camelCase" => Ok(Case::Camel),
         "PascalCase" => Ok(Case::Pascal),
-        "SREAMING_SNAKE" => Ok(Case::ScreamingSnake),
+        "SREAMING_SNAKE" => Ok(Case::Constant),
         "snake_case" => Ok(Case::Snake),
         "kebab-case" => Ok(Case::Kebab),
         _ => Err(Box::new(ExpressionError::from(format!(
@@ -45,7 +45,7 @@ pub(crate) fn into_case(s: String) -> Result<Case, Box<dyn DiagnosticMessage>> {
 }
 
 #[inline]
-pub(crate) fn convert_case(value: Value, to_case: Case, from_case: Option<Case>) -> Resolved {
+pub(crate) fn convert_case(value: &Value, to_case: Case, from_case: Option<Case>) -> Resolved {
     match from_case {
         Some(case) => Ok(value
             .try_bytes_utf8_lossy()?

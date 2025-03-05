@@ -1,9 +1,9 @@
 use crate::compiler::prelude::*;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::sync::LazyLock;
 
-fn ip_subnet(value: Value, mask: Value) -> Resolved {
+fn ip_subnet(value: &Value, mask: &Value) -> Resolved {
     let value: IpAddr = value
         .try_bytes_utf8_lossy()?
         .parse()
@@ -36,7 +36,7 @@ fn ip_subnet(value: Value, mask: Value) -> Resolved {
     Ok(mask_ips(value, mask)?.to_string().into())
 }
 
-static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"/(?P<subnet>\d*)").unwrap());
+static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"/(?P<subnet>\d*)").unwrap());
 
 #[derive(Clone, Copy, Debug)]
 pub struct IpSubnet;
@@ -93,7 +93,7 @@ impl FunctionExpression for IpSubnetFn {
         let value = self.value.resolve(ctx)?;
         let mask = self.subnet.resolve(ctx)?;
 
-        ip_subnet(value, mask)
+        ip_subnet(&value, &mask)
     }
 
     fn type_def(&self, _: &state::TypeState) -> TypeDef {
@@ -127,7 +127,7 @@ fn mask_ips(ip: IpAddr, mask: IpAddr) -> ExpressionResult<IpAddr> {
                 .zip(addr.segments().iter())
                 .zip(mask.segments().iter())
             {
-                *masked = addr & mask
+                *masked = addr & mask;
             }
 
             Ok(IpAddr::from(masked))

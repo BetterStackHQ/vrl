@@ -1,15 +1,18 @@
 //! Contains the main "Value" type for Vector and VRL, as well as helper methods.
 
+#[allow(clippy::module_name_repetitions)]
+pub use super::value::regex::ValueRegex;
+#[allow(clippy::module_name_repetitions)]
+pub use iter::{IterItem, ValueIter};
+
 use bytes::{Bytes, BytesMut};
 use chrono::{DateTime, SecondsFormat, Utc};
 use ordered_float::NotNan;
-use std::{cmp::Ordering};
+use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use indexmap::IndexMap;
+use std::borrow::Cow;
 
-pub use iter::{IterItem, ValueIter};
-
-pub use super::value::regex::ValueRegex;
 use super::KeyString;
 use crate::path::ValuePath;
 
@@ -191,7 +194,7 @@ impl Hash for Value {
                 }
             },
             Value::Array(v) => v.hash(state),
-            Value::Timestamp(v) => v.timestamp_nanos().hash(state),
+            Value::Timestamp(v) => v.timestamp_nanos_opt().hash(state),
             Value::Null => 0.hash(state),
             Value::Regex(v) => v.as_str().hash(state),  // Hash the regex pattern string
         }
@@ -222,6 +225,26 @@ impl PartialOrd for Value {
             _ => None,
         }
     }
+}
+
+/// Converts a slice of bytes to a string, including invalid characters.
+#[must_use]
+pub fn simdutf_bytes_utf8_lossy(v: &[u8]) -> Cow<'_, str> {
+    simdutf8::basic::from_utf8(v).map_or_else(
+        |_| {
+            const REPLACEMENT: &str = "\u{FFFD}";
+
+            let mut res = String::with_capacity(v.len());
+            for chunk in v.utf8_chunks() {
+                res.push_str(chunk.valid());
+                if !chunk.invalid().is_empty() {
+                    res.push_str(REPLACEMENT);
+                }
+            }
+            Cow::Owned(res)
+        },
+        Cow::Borrowed,
+    )
 }
 
 /// Converts a timestamp to a `String`.

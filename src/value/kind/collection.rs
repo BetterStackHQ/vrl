@@ -392,6 +392,7 @@ impl std::fmt::Display for Collection<Index> {
 #[cfg(test)]
 mod tests {
     use indexmap::IndexMap;
+    use std::collections::HashMap;
 
     use super::*;
 

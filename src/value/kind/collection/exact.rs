@@ -166,6 +166,7 @@ impl From<&Kind> for Exact {
 #[cfg(test)]
 mod tests {
     use indexmap::IndexMap;
+    use std::collections::HashMap;
 
     use super::*;
 

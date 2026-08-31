@@ -764,7 +764,8 @@ impl Function for DnsLookup {
 #[cfg(test)]
 #[cfg(not(target_arch = "wasm32"))]
 mod tests {
-    use std::collections::{IndexMap, HashSet};
+    use indexmap::IndexMap;
+    use std::collections::HashSet;
 
     use super::*;
     use crate::value;

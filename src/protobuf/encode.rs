@@ -195,6 +195,7 @@ mod tests {
     use bytes::Bytes;
     use chrono::DateTime;
     use ordered_float::NotNan;
+    use indexmap::IndexMap;
     use prost_reflect::MapKey;
     use std::collections::HashMap;
     use std::path::PathBuf;

@@ -43,7 +43,13 @@ impl FromLua for Value {
                 } else if table_is_timestamp(&t)? {
                     table_to_timestamp(t).map(Self::Timestamp)
                 } else {
-                    <_>::from_lua(LuaValue::Table(t), lua).map(Self::Object)
+                    // `IndexMap` has no `FromLua` (the `BTreeMap` it replaced did).
+                    let mut object = crate::value::ObjectMap::default();
+                    for pair in t.pairs::<String, LuaValue>() {
+                        let (key, value) = pair?;
+                        object.insert(key.into(), Self::from_lua(value, lua)?);
+                    }
+                    Ok(Self::Object(object))
                 }
             }
             other => Err(mlua::Error::FromLuaConversionError {

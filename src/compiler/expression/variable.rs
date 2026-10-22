@@ -37,11 +37,14 @@ impl Variable {
 
 impl Expression for Variable {
     fn resolve(&self, ctx: &mut Context) -> Resolved {
-        Ok(ctx
+        let value = ctx
             .state()
             .variable(&self.ident)
             .cloned()
-            .unwrap_or(Value::Null))
+            .unwrap_or(Value::Null);
+        // A variable read is a deep clone; charge it like a query (see `Query::resolve`).
+        ctx.charge_clone(&value)?;
+        Ok(value)
     }
 
     fn resolve_constant(&self, state: &TypeState) -> Option<Value> {

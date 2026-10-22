@@ -188,6 +188,9 @@ impl Expression for Expr {
             Return, Unary, Variable,
         };
 
+        // Every node passes through here, so this is where the run's time limit is counted.
+        ctx.tick()?;
+
         match self {
             Literal(v) => v.resolve(ctx),
             Container(v) => v.resolve(ctx),

@@ -1,38 +1,45 @@
+use crate::compiler::limits::clone_size_of;
 use crate::compiler::prelude::*;
 use crate::path::{OwnedTargetPath, OwnedValuePath};
 
 fn unnest(path: &expression::Query, ctx: &mut Context) -> Resolved {
     let lookup_buf = path.path();
 
-    match path.target() {
-        expression::Target::External(prefix) => {
-            let root = ctx
-                .target()
-                .target_get(&OwnedTargetPath::root(*prefix))
-                .expect("must never fail")
-                .expect("always a value");
-            unnest_root(root, lookup_buf)
-        }
+    // The root is cloned up front (unnest_root used to clone it itself) so that the borrow of
+    // `ctx` ends before the copies are charged against it.
+    let root = match path.target() {
+        expression::Target::External(prefix) => ctx
+            .target()
+            .target_get(&OwnedTargetPath::root(*prefix))
+            .expect("must never fail")
+            .expect("always a value")
+            .clone(),
         expression::Target::Internal(v) => {
             let value = ctx.state().variable(v.ident()).unwrap_or(&Value::Null);
-            let root = value.get(&OwnedValuePath::root()).expect("always a value");
-            unnest_root(root, lookup_buf)
+            value
+                .get(&OwnedValuePath::root())
+                .expect("always a value")
+                .clone()
         }
         expression::Target::Container(expr) => {
             let value = expr.resolve(ctx)?;
-            let root = value.get(&OwnedValuePath::root()).expect("always a value");
-            unnest_root(root, lookup_buf)
+            value
+                .get(&OwnedValuePath::root())
+                .expect("always a value")
+                .clone()
         }
         expression::Target::FunctionCall(expr) => {
             let value = expr.resolve(ctx)?;
-            let root = value.get(&OwnedValuePath::root()).expect("always a value");
-            unnest_root(root, lookup_buf)
+            value
+                .get(&OwnedValuePath::root())
+                .expect("always a value")
+                .clone()
         }
-    }
+    };
+    unnest_root(root, lookup_buf, ctx)
 }
 
-fn unnest_root(root: &Value, path: &OwnedValuePath) -> Resolved {
-    let mut trimmed = root.clone();
+fn unnest_root(mut trimmed: Value, path: &OwnedValuePath, ctx: &mut Context) -> Resolved {
     let values = trimmed
         .remove(path, true)
         .ok_or(ValueError::Expected {
@@ -40,6 +47,13 @@ fn unnest_root(root: &Value, path: &OwnedValuePath) -> Resolved {
             expected: Kind::array(Collection::any()),
         })?
         .try_array()?;
+
+    // One copy of the root per element: charged before any copy is made, since a long array
+    // on a large event multiplies the event by its length. (The result itself is charged by
+    // its element count only, so this is not counted twice.)
+    if ctx.has_memory_limit() {
+        ctx.charge(values.len().saturating_mul(clone_size_of(&trimmed)))?;
+    }
 
     let events = values
         .into_iter()

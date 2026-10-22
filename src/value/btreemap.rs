@@ -21,15 +21,18 @@ mod tests {
     fn test_btreemap() {
         use indexmap::IndexMap;
 
-        assert_eq!(btreemap! {}, IndexMap::<usize, usize>::new());
+        let empty: IndexMap<usize, usize> = btreemap! {};
+        assert_eq!(empty, IndexMap::<usize, usize>::new());
 
         let mut map = IndexMap::new();
         map.insert(1, "1");
-        assert_eq!(btreemap! { 1 => "1" }, map);
+        let built: IndexMap<i32, &str> = btreemap! { 1 => "1" };
+        assert_eq!(built, map);
 
         let mut map = IndexMap::new();
         map.insert("1", "one");
         map.insert("2", "two");
-        assert_eq!(btreemap! { "1" => "one", "2" => "two" }, map);
+        let built: IndexMap<&str, &str> = btreemap! { "1" => "one", "2" => "two" };
+        assert_eq!(built, map);
     }
 }

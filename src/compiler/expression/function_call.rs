@@ -640,7 +640,14 @@ impl FunctionCall {
 
 impl Expression for FunctionCall {
     fn resolve(&self, ctx: &mut Context) -> Resolved {
-        self.expr.resolve(ctx).map_err(|err| match err {
+        let result = self.expr.resolve(ctx);
+        // Whatever a function built is charged once it exists, by its top level (functions that
+        // can inflate their input unboundedly — the decoders, `replace`, `unnest` — bound
+        // themselves first; everything else is within a constant of inputs that were charged).
+        if let Ok(value) = &result {
+            ctx.charge_result(value)?;
+        }
+        result.map_err(|err| match err {
             ExpressionError::Abort { .. }
             | ExpressionError::Fallible { .. }
             | ExpressionError::Missing { .. } => {

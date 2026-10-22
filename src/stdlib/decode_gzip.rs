@@ -2,10 +2,16 @@ use crate::compiler::prelude::*;
 use flate2::read::MultiGzDecoder;
 use std::io::Read;
 
-fn decode_gzip(value: Value) -> Resolved {
+fn decode_gzip(value: Value, ctx: &mut Context) -> Resolved {
     let value = value.try_bytes()?;
     let mut buf = Vec::new();
-    let result = MultiGzDecoder::new(std::io::Cursor::new(value)).read_to_end(&mut buf);
+    // A few KB can inflate to GB: read one byte past what the run's memory limit allows, so an
+    // oversized output is noticed without being allocated (the output is charged once it exists).
+    let limit = ctx.remaining_bytes();
+    let result = MultiGzDecoder::new(std::io::Cursor::new(value))
+        .take(limit.saturating_add(1) as u64)
+        .read_to_end(&mut buf);
+    ctx.ensure_fits(buf.len())?;
 
     match result {
         Ok(_) => Ok(Value::Bytes(buf.into())),
@@ -58,7 +64,7 @@ impl FunctionExpression for DecodeGzipFn {
     fn resolve(&self, ctx: &mut Context) -> Resolved {
         let value = self.value.resolve(ctx)?;
 
-        decode_gzip(value)
+        decode_gzip(value, ctx)
     }
 
     fn type_def(&self, _: &state::TypeState) -> TypeDef {

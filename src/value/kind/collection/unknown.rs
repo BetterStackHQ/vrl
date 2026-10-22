@@ -356,7 +356,6 @@ impl<T: Ord + Hash> From<Infinite> for Collection<T> {
 
 #[cfg(test)]
 mod tests {
-    use indexmap::IndexMap;
     use std::collections::HashMap;
 
     use super::*;

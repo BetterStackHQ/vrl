@@ -109,20 +109,26 @@ impl Expression for Query {
                     prefix: *prefix,
                     path: self.path.clone(),
                 };
-                return Ok(ctx
+                // A read is a deep clone of the subtree, which is how `. = [., .]` doubles the
+                // event per statement; charge it against the memory limit.
+                let value = ctx
                     .target()
                     .target_get(&path)
                     .ok()
                     .flatten()
                     .cloned()
-                    .unwrap_or(Value::Null));
+                    .unwrap_or(Value::Null);
+                ctx.charge_clone(&value)?;
+                return Ok(value);
             }
             Internal(variable) => variable.resolve(ctx)?,
             FunctionCall(call) => call.resolve(ctx)?,
             Container(container) => container.resolve(ctx)?,
         };
 
-        Ok(value.get(&self.path).cloned().unwrap_or(Value::Null))
+        let value = value.get(&self.path).cloned().unwrap_or(Value::Null);
+        ctx.charge_clone(&value)?;
+        Ok(value)
     }
 
     fn resolve_constant(&self, state: &TypeState) -> Option<Value> {

@@ -1,12 +1,32 @@
 use crate::compiler::prelude::*;
 
-fn replace(value: Value, with_value: Value, count: Value, pattern: Value) -> Resolved {
+fn replace(
+    value: Value,
+    with_value: Value,
+    count: Value,
+    pattern: Value,
+    ctx: &mut Context,
+) -> Resolved {
     let value = value.try_bytes_utf8_lossy()?;
     let with = with_value.try_bytes_utf8_lossy()?;
     let count = count.try_integer()?;
     match pattern {
         Value::Bytes(bytes) => {
             let pattern = String::from_utf8_lossy(&bytes);
+            // `replace(s, "a", <1 MiB>)` on a string of a's is |s| × 1 MiB: size the output
+            // before building it. Unlimited runs skip the extra scan.
+            if ctx.has_memory_limit() {
+                let matches = match count {
+                    i if i > 0 => value.matches(pattern.as_ref()).take(i as usize).count(),
+                    i if i < 0 => value.matches(pattern.as_ref()).count(),
+                    _ => 0,
+                };
+                ctx.ensure_fits(
+                    value
+                        .len()
+                        .saturating_add(matches.saturating_mul(with.len())),
+                )?;
+            }
             let replaced = match count {
                 i if i > 0 => value.replacen(pattern.as_ref(), &with, i as usize),
                 i if i < 0 => value.replace(pattern.as_ref(), &with),
@@ -16,19 +36,36 @@ fn replace(value: Value, with_value: Value, count: Value, pattern: Value) -> Res
             Ok(replaced.into())
         }
         Value::Regex(regex) => {
-            let replaced = match count {
-                i if i > 0 => Bytes::copy_from_slice(
-                    regex.replacen(&value, i as usize, with.as_ref()).as_bytes(),
-                )
-                .into(),
-                i if i < 0 => {
-                    Bytes::copy_from_slice(regex.replace_all(&value, with.as_ref()).as_bytes())
-                        .into()
-                }
-                _ => value.into(),
+            let count = match count {
+                i if i > 0 => i as usize,
+                i if i < 0 => usize::MAX,
+                _ => return Ok(value.into()),
             };
+            // What `Regex::replacen` does, with the output bounded as it grows: `$1` expansion
+            // can repeat captured text per match, so the size is only known as it is built. A
+            // replacement with no `$` needs no captures, which is the fast path `replacen` has too.
+            let limit = ctx.remaining_bytes();
+            let mut replaced = String::with_capacity(value.len().min(limit));
+            let mut last = 0;
+            if with.contains('$') {
+                for captures in regex.captures_iter(&value).take(count) {
+                    let matched = captures.get(0).expect("group 0 always matches");
+                    replaced.push_str(&value[last..matched.start()]);
+                    captures.expand(&with, &mut replaced);
+                    last = matched.end();
+                    ctx.ensure_fits(replaced.len())?;
+                }
+            } else {
+                for matched in regex.find_iter(&value).take(count) {
+                    replaced.push_str(&value[last..matched.start()]);
+                    replaced.push_str(&with);
+                    last = matched.end();
+                    ctx.ensure_fits(replaced.len())?;
+                }
+            }
+            replaced.push_str(&value[last..]);
 
-            Ok(replaced)
+            Ok(replaced.into())
         }
         value => Err(ValueError::Expected {
             got: value.kind(),
@@ -132,7 +169,7 @@ impl FunctionExpression for ReplaceFn {
         let count = self.count.resolve(ctx)?;
         let pattern = self.pattern.resolve(ctx)?;
 
-        replace(value, with_value, count, pattern)
+        replace(value, with_value, count, pattern, ctx)
     }
 
     fn type_def(&self, _: &state::TypeState) -> TypeDef {

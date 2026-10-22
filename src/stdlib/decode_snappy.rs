@@ -1,8 +1,13 @@
 use crate::compiler::prelude::*;
 use snap::raw::Decoder;
 
-fn decode_snappy(value: Value) -> Resolved {
+fn decode_snappy(value: Value, ctx: &mut Context) -> Resolved {
     let value = value.try_bytes()?;
+    // The header declares the inflated length, so it can be checked against the run's memory
+    // limit before anything is allocated.
+    let declared = snap::raw::decompress_len(&value)
+        .map_err(|_| "unable to decode value with Snappy decoder")?;
+    ctx.ensure_fits(declared)?;
     let mut decoder = Decoder::new();
     let result = decoder.decompress_vec(&value);
 
@@ -57,7 +62,7 @@ impl FunctionExpression for DecodeSnappyFn {
     fn resolve(&self, ctx: &mut Context) -> Resolved {
         let value = self.value.resolve(ctx)?;
 
-        decode_snappy(value)
+        decode_snappy(value, ctx)
     }
 
     fn type_def(&self, _: &state::TypeState) -> TypeDef {

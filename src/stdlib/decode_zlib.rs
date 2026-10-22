@@ -2,10 +2,15 @@ use crate::compiler::prelude::*;
 use flate2::read::ZlibDecoder;
 use std::io::Read;
 
-fn decode_zlib(value: Value) -> Resolved {
+fn decode_zlib(value: Value, ctx: &mut Context) -> Resolved {
     let value = value.try_bytes()?;
     let mut buf = Vec::new();
-    let result = ZlibDecoder::new(std::io::Cursor::new(value)).read_to_end(&mut buf);
+    // Bounded by the run's memory limit like decode_gzip.
+    let limit = ctx.remaining_bytes();
+    let result = ZlibDecoder::new(std::io::Cursor::new(value))
+        .take(limit.saturating_add(1) as u64)
+        .read_to_end(&mut buf);
+    ctx.ensure_fits(buf.len())?;
 
     match result {
         Ok(_) => Ok(Value::Bytes(buf.into())),
@@ -58,7 +63,7 @@ impl FunctionExpression for DecodeZlibFn {
     fn resolve(&self, ctx: &mut Context) -> Resolved {
         let value = self.value.resolve(ctx)?;
 
-        decode_zlib(value)
+        decode_zlib(value, ctx)
     }
 
     fn type_def(&self, _: &state::TypeState) -> TypeDef {

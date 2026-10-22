@@ -528,6 +528,9 @@ where
         let value = match self {
             Single { target, expr } => {
                 let value = expr.resolve(ctx)?;
+                // The stored copy is a deep clone (the value is also the expression's result, so
+                // `.a = .b = x` chains); charge it like a read.
+                ctx.charge_clone(&value)?;
                 target.insert(value.clone(), ctx);
                 value
             }
@@ -538,6 +541,7 @@ where
                 default,
             } => match expr.resolve(ctx) {
                 Ok(value) => {
+                    ctx.charge_clone(&value)?;
                     ok.insert(value.clone(), ctx);
                     err.insert(Value::Null, ctx);
                     value

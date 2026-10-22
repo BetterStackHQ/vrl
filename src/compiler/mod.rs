@@ -40,6 +40,7 @@ pub use context::Context;
 pub use datetime::TimeZone;
 pub use expression::{Expression, FunctionExpression};
 pub use expression_error::{ExpressionError, Resolved};
+pub use limits::{Limit, Limits};
 pub use function::{Function, Parameter};
 pub use program::{Program, ProgramInfo};
 pub use state::{TypeInfo, TypeState};
@@ -58,6 +59,7 @@ mod compiler;
 
 mod compile_config;
 mod context;
+pub mod limits;
 mod datetime;
 mod deprecation_warning;
 mod expression_error;

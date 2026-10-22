@@ -1,12 +1,22 @@
 use crate::compiler::prelude::*;
 use nom::AsBytes;
+use std::io::Read;
 
-fn decode_zstd(value: Value) -> Resolved {
+fn decode_zstd(value: Value, ctx: &mut Context) -> Resolved {
     let value = value.try_bytes()?;
-    let result = zstd::decode_all(value.as_bytes());
+    let mut buf = Vec::new();
+    // Streamed rather than `decode_all`, so the read stops at the run's memory limit instead
+    // of allocating the whole inflated value first.
+    let limit = ctx.remaining_bytes();
+    let result = zstd::Decoder::new(value.as_bytes()).and_then(|decoder| {
+        decoder
+            .take(limit.saturating_add(1) as u64)
+            .read_to_end(&mut buf)
+    });
+    ctx.ensure_fits(buf.len())?;
 
     match result {
-        Ok(decoded_bytes) => Ok(Value::Bytes(decoded_bytes.into())),
+        Ok(_) => Ok(Value::Bytes(buf.into())),
         Err(_) => Err("unable to decode value with Zstd decoder".into()),
     }
 }
@@ -56,7 +66,7 @@ impl FunctionExpression for DecodeZstdFn {
     fn resolve(&self, ctx: &mut Context) -> Resolved {
         let value = self.value.resolve(ctx)?;
 
-        decode_zstd(value)
+        decode_zstd(value, ctx)
     }
 
     fn type_def(&self, _: &state::TypeState) -> TypeDef {

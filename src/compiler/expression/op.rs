@@ -79,6 +79,20 @@ impl Op {
     }
 }
 
+/// Bytes that `lhs <opcode> rhs` will allocate when it concatenates or repeats a string.
+fn concat_size(opcode: ast::Opcode, lhs: &Value, rhs: &Value) -> Option<usize> {
+    match (opcode, lhs, rhs) {
+        (ast::Opcode::Add, Value::Bytes(lhs), Value::Bytes(rhs)) => Some(lhs.len() + rhs.len()),
+        (ast::Opcode::Mul, Value::Bytes(bytes), Value::Integer(times))
+        | (ast::Opcode::Mul, Value::Integer(times), Value::Bytes(bytes)) => Some(
+            bytes
+                .len()
+                .saturating_mul(usize::try_from(*times).unwrap_or(0)),
+        ),
+        _ => None,
+    }
+}
+
 impl Expression for Op {
     fn resolve(&self, ctx: &mut Context) -> Resolved {
         use crate::value::Value::{Boolean, Null};
@@ -105,8 +119,15 @@ impl Expression for Op {
         let lhs = self.lhs.resolve(ctx)?;
         let rhs = self.rhs.resolve(ctx)?;
 
+        // `+` and `*` on strings are the cheapest ways to build a huge value (`.a = .a + .a`
+        // doubles per statement, `"x" * 4000000000` is 4 GB in one node), so their output is
+        // charged before it is allocated.
+        if let Some(bytes) = concat_size(self.opcode, &lhs, &rhs) {
+            ctx.charge(bytes)?;
+        }
+
         // Arithmetic that can overflow should wrap
-        match self.opcode {
+        let value = match self.opcode {
             Mul => lhs.try_mul(rhs),
             Div => lhs.try_div(rhs),
             Add => lhs.try_add(rhs),
@@ -119,8 +140,14 @@ impl Expression for Op {
             Le => lhs.try_le(rhs),
             Merge => lhs.try_merge(rhs),
             And | Or | Err => unreachable!(),
+        }?;
+
+        // `|` deep-clones both objects; both were already bounded, so charging the result after
+        // the fact is enough.
+        if self.opcode == Merge {
+            ctx.charge_result(&value)?;
         }
-        .map_err(Into::into)
+        Ok(value)
     }
 
     fn type_info(&self, state: &TypeState) -> TypeInfo {

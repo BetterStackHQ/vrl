@@ -98,12 +98,16 @@ impl<'a> Context<'a> {
         Ok(())
     }
 
-    /// A large string flowing through a node makes the next tick read the clock, whatever it was
-    /// charged: the nodes that take long are the ones working on a lot of bytes.
+    /// A large value flowing through a node makes the next tick read the clock, whatever it was
+    /// charged: the nodes that take long are the ones working on a lot of bytes or elements. A
+    /// container is judged by its top-level length (O(1)), at `SCALAR_BYTES` per element.
     #[inline]
     fn note_input(&mut self, value: &Value) {
-        if let Value::Bytes(bytes) = value {
-            self.budget.note_input(bytes.len());
+        match value {
+            Value::Bytes(bytes) => self.budget.note_input(bytes.len()),
+            Value::Array(items) => self.budget.note_input(items.len() * limits::SCALAR_BYTES),
+            Value::Object(map) => self.budget.note_input(map.len() * limits::SCALAR_BYTES),
+            _ => {}
         }
     }
 

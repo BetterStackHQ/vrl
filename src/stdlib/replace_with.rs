@@ -59,6 +59,9 @@ where
 
         replaced.push_str(&haystack[last_match..m.start()]);
         replaced.push_str(&replacement);
+        // The closure can return something large on every match, so the output is bounded as it
+        // grows rather than once it exists.
+        ctx.ensure_fits(replaced.len())?;
         last_match = m.end();
         if idx >= limit {
             break;

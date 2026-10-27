@@ -54,7 +54,7 @@ const TICKS_PER_CLOCK_READ: u32 = 1024;
 const LARGE_CHARGE: usize = 64 * 1024;
 
 /// Estimated bytes of a `Value` node that holds no payload of its own (integer, float, null, …).
-const SCALAR_BYTES: usize = 16;
+pub(crate) const SCALAR_BYTES: usize = 16;
 /// Estimated bytes of a `Value::Bytes` handle, excluding the buffer.
 const BYTES_HANDLE: usize = 32;
 /// Estimated bytes of an empty object, and per entry on top of its key and value.
@@ -433,6 +433,35 @@ mod tests {
         let program = ".h = sha2(string!(.s))\n".repeat(200);
         let (exceeded, _, _) = run(&program, event, limits);
         assert_eq!(exceeded, Some(Limit::Time));
+    }
+
+    #[test]
+    fn the_deadline_catches_container_heavy_nodes_with_no_memory_limit() {
+        let mut event = Value::Object(Default::default());
+        event.insert(
+            "items",
+            Value::Array((0..200_000).map(Value::Integer).collect()),
+        );
+        let limits = Limits {
+            max_bytes: None,
+            max_duration: Some(Duration::from_millis(5)),
+        };
+        let (exceeded, _, _) = run(&".u = unique(array!(.items))\n".repeat(100), event, limits);
+        assert_eq!(exceeded, Some(Limit::Time));
+    }
+
+    #[test]
+    fn replace_with_is_bounded_as_its_output_grows() {
+        let mut event = Value::Object(Default::default());
+        event.insert("s", Value::Bytes(vec![b'a'; 1000].into()));
+        event.insert("big", Value::Bytes(vec![b'b'; 100 * 1024].into()));
+        let (exceeded, event, _) = run(
+            ".out = replace_with(string!(.s), r'a') -> |_m| { string!(.big) }",
+            event,
+            bytes(MIB),
+        );
+        assert_eq!(exceeded, Some(Limit::Memory));
+        assert_eq!(event.get("out"), None);
     }
 
     #[test]

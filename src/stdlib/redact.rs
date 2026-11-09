@@ -291,6 +291,9 @@ fn str_replace(haystack: &str, pattern: &str, redactor: &Redactor) -> String {
 }
 
 /// The recipe for redacting the matched filters.
+// `Hash` holds a function pointer; the derived PartialEq compares it by address, which is what the
+// redactor wants (same encoder, same hasher) even though addresses are not guaranteed unique.
+#[allow(unpredictable_function_pointer_comparisons)]
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 enum Redactor {
     #[default]
@@ -406,7 +409,7 @@ impl regex::Replacer for &Redactor {
         self.replace_str(&caps[0], dst);
     }
 
-    fn no_expansion(&mut self) -> Option<Cow<str>> {
+    fn no_expansion(&mut self) -> Option<Cow<'_, str>> {
         match self {
             Redactor::Full => Some(REDACTED.into()),
             Redactor::Text(s) => Some(s.into()),

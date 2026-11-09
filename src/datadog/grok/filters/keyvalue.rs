@@ -270,13 +270,13 @@ fn parse_value<'a>(input: &'a str, quotes: &'a [(char, char)]) -> SResult<'a, Va
     ))(input)
 }
 
-fn parse_string(input: &str) -> SResult<Value> {
+fn parse_string(input: &str) -> SResult<'_, Value> {
     map(rest, |s: &str| {
         Value::Bytes(Bytes::copy_from_slice(s.trim().as_bytes()))
     })(input)
 }
 
-fn parse_number(input: &str) -> SResult<Value> {
+fn parse_number(input: &str) -> SResult<'_, Value> {
     map_res(terminated(double, eof), |v| {
         // can be safely converted to Integer without precision loss
         if ((v as i64) as f64 - v).abs() == 0.0 {
@@ -297,11 +297,11 @@ fn parse_number(input: &str) -> SResult<Value> {
     })
 }
 
-fn parse_null(input: &str) -> SResult<Value> {
+fn parse_null(input: &str) -> SResult<'_, Value> {
     value(Value::Null, tag("null"))(input)
 }
 
-fn parse_boolean(input: &str) -> SResult<Value> {
+fn parse_boolean(input: &str) -> SResult<'_, Value> {
     let parse_true = value(Value::Boolean(true), tag("true"));
     let parse_false = value(Value::Boolean(false), tag("false"));
 
